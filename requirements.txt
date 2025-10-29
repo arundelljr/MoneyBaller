@@ -1,7 +1,9 @@
-
-pandas
+fastapi==0.120.2
+matplotlib==3.10.7
 numpy
-scikit-learn
-matplotlib
+pandas==2.3.3
+scikit-learn==1.7.2
+setuptools==63.2.0
+uvicorn
 seaborn
 streamlit
