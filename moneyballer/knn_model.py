@@ -9,5 +9,5 @@ knn_model = NearestNeighbors(
 knn_model.fit(X_proj)
 
 # save knn model as pickel file
-with open("knn_model.pkl", "wb") as file:
+with open("models/knn_model.pkl", "wb") as file:
     pickle.dump(knn_model, file)
