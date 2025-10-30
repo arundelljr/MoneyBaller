@@ -14,7 +14,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY moneyballer moneyballer
 COPY api api
 COPY models models
-
+COPY raw_data raw_data
 
 # COPY credentials.json credentials.json
 
