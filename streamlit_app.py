@@ -2,8 +2,9 @@ import streamlit as st
 import requests
 import pandas as pd
 
+
 # FastAPI backend URL
-GET_PLAYER_ID_API_URL = "http://127.0.0.1:8000/get_player_id"
+GET_PLAYER_ID_API_URL = "https://api-974875114263.europe-west1.run.app/get_player_id"
 SIMILAR_ALTERNATIVES_API_URL = "http://127.0.0.1:8000/find_similar_players"
 
 st.title("MoneyBaller Player Similarity Search")
@@ -18,6 +19,7 @@ if 'selected_player_id' in st.session_state:
 else:
     st.info("No player selected yet.")
 
+st.session_state
 if player_name:
     try:
         response = requests.get(GET_PLAYER_ID_API_URL, params={"name": player_name})
@@ -61,7 +63,7 @@ if player_name:
 # if 'selected_player_id' in st.session_state:
 #     pass
 
-if st.session_state['selected_player_id']:
+if st.session_state.get('selected_player_id'):
     try:
         response = requests.get(SIMILAR_ALTERNATIVES_API_URL, params={"player_id": st.session_state['selected_player_id']})
         if response.status_code == 200:
