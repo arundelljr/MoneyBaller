@@ -16,7 +16,6 @@ COPY api api
 COPY models models
 COPY raw_data raw_data
 
-
 # COPY credentials.json credentials.json
 
 # TODO: to speed up, you can load your model from MLFlow or Google Cloud Storage at startup using

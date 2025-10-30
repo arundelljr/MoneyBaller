@@ -7,3 +7,4 @@ setuptools==63.2.0
 uvicorn
 seaborn
 streamlit
+rapidfuzz
