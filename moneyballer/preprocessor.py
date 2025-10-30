@@ -67,4 +67,4 @@ X_proj_array = projection_pipeline.fit_transform(X)
 # PLAYER ID AS INDEX FOR EASE OF SEARCHING DOWN THE LINE
 X_proj = pd.DataFrame(X_proj_array, index=X["player_id"].values)
 
-X_proj.to_csv(path="raw_data/FC26_20250921.csv")
+X_proj.to_csv("raw_data/X_proj.csv")
