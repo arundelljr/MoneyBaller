@@ -28,6 +28,7 @@ def clear_selected_on_search():
         st.session_state['selected_player_id'] = None
         st.session_state['selected_player_details'] = None
 
+
 # Return image
 def get_image_base64(image_url):
     try:
@@ -147,6 +148,7 @@ st.markdown("<h1>⚽ MoneyBaller Player Similarity Search</h1>", unsafe_allow_ht
 st.markdown("<p style='text-align:center;'>Find the most data-driven football player alternatives.</p>", unsafe_allow_html=True)
 st.divider()
 
+
 # ==============================
 # PLAYER SEARCH INPUT
 # ==============================
@@ -244,6 +246,7 @@ if selected_id and selected_details:
 
     st.markdown("---")
     st.markdown("## 🧠 Similar Alternatives Found")
+
 
     # ==============================
     # SIMILAR PLAYER RECOMMENDATIONS
