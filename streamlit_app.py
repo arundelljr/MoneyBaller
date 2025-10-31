@@ -5,7 +5,7 @@ import pandas as pd
 
 # FastAPI backend URL
 GET_PLAYER_ID_API_URL = "https://api-974875114263.europe-west1.run.app/get_player_id"
-SIMILAR_ALTERNATIVES_API_URL = "http://127.0.0.1:8000/find_similar_players"
+SIMILAR_ALTERNATIVES_API_URL = "https://api-974875114263.europe-west1.run.app/find_similar_players"
 
 st.title("MoneyBaller Player Similarity Search")
 
