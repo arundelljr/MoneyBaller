@@ -35,4 +35,4 @@ final_pipe.fit(X, y)
 
 # save knn model as pickel file
 with open("models/gk_model.pkl", "wb") as file:
-    pickle.dump(gk_model, file)
+    pickle.dump(final_pipe, file)
