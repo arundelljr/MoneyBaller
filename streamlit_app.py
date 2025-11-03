@@ -12,7 +12,7 @@ st.set_page_config(page_title="⚽ MoneyBaller", layout="wide")
 GET_PLAYER_ID_API_URL = "https://api-974875114263.europe-west1.run.app/get_player_id"
 SIMILAR_ALTERNATIVES_API_URL = "https://api-974875114263.europe-west1.run.app/find_similar_players"
 OUTFIELD_VALUATION_API_URL = "https://api-974875114263.europe-west1.run.app/outfield_valuation"
-GOALKEEPER_VALUATION_API_URL = "https://api-974875114263.europe-west1.run.app/goalkeeper_valuation"
+GOALKEEPER_VALUATION_API_URL = "http://127.0.0.1:8000/goalkeeper_valuation"
 
 
 
@@ -306,3 +306,102 @@ if selected_id and selected_details:
             st.error(f"API Error ({response.status_code}): Failed to find similar players.")
     except Exception as e:
         st.error(f"Error connecting to the similarity API: {e}")
+
+
+
+st.markdown("<br><br><hr style='border:2px solid #bbb'><br><br>", unsafe_allow_html=True)
+
+# === small helper to format money nicely ===
+def eur(x):
+    try:
+        x = float(x)
+    except Exception:
+        return "—"
+    if abs(x) >= 1_000_000:
+        return f"€{x/1_000_000:,.2f}m"
+    if abs(x) >= 1_000:
+        return f"€{x:,.0f}"
+    return f"€{x:,.2f}"
+
+st.set_page_config(page_title="Simple Player Valuation", page_icon="⚽", layout="wide")
+st.markdown("<h1 style='text-align:center'>⚽ Simple Player Valuation</h1>", unsafe_allow_html=True)
+
+
+# 2) Choose which type of player we want to value
+ptype = st.radio("Player type:", ["Outfield", "Goalkeeper"], horizontal=True)
+
+# --- build inputs in 3 columns ---
+if ptype == "Outfield":
+    st.subheader("Outfield features")
+    c1, c2, c3 = st.columns(3)
+    with c1:
+        overall   = st.slider("overall",   1, 99, 80)
+        pace      = st.slider("pace",      1, 99, 80)
+        dribbling = st.slider("dribbling", 1, 99, 80)
+    with c2:
+        potential = st.slider("potential", 1, 99, 86)
+        shooting  = st.slider("shooting",  1, 99, 78)
+        defending = st.slider("defending", 1, 99, 70)
+    with c3:
+        age     = st.slider("age", 15, 45, 23)
+        passing = st.slider("passing", 1, 99, 81)
+        physic  = st.slider("physic",  1, 99, 79)
+
+    params   = dict(
+        overall=overall, potential=potential, age=age, pace=pace,
+        shooting=shooting, passing=passing, dribbling=dribbling,
+        defending=defending, physic=physic
+    )
+    endpoint = OUTFIELD_VALUATION_API_URL
+
+else:
+    st.subheader("Goalkeeper features")
+    c1, c2, c3 = st.columns(3)
+    with c1:
+        gk_div   = st.slider("diving", 1, 99, 82)
+        gk_kick  = st.slider("kicking", 1, 99, 78)
+        gk_ref   = st.slider("reflexes", 1, 99, 85)
+    with c2:
+        gk_hand  = st.slider("handling", 1, 99, 81)
+        gk_pos   = st.slider("positioning", 1, 99, 83)
+        gk_speed = st.slider("speed", 1, 99, 63)
+    with c3:
+        pen      = st.slider("mentality on penalties", 1, 99, 60)
+        comp     = st.slider("mentality on composure", 1, 99, 70)
+        age      = st.slider("age", 15, 45, 24)
+
+    params = dict(
+        goalkeeping_diving=gk_div, goalkeeping_handling=gk_hand,
+        goalkeeping_kicking=gk_kick, goalkeeping_positioning=gk_pos,
+        goalkeeping_reflexes=gk_ref, goalkeeping_speed=gk_speed,
+        mentality_penalties=pen, mentality_composure=comp, age=age
+    )
+
+    endpoint = GOALKEEPER_VALUATION_API_URL
+
+st.divider()
+
+
+# --- call API + show nice metric ---
+left, right = st.columns([1, 2])
+
+if st.button("💰 Get valuation", type="primary"):
+    with st.spinner("Calculating player valuation..."):
+        try:
+            st.write("Sending to API:", endpoint)
+            st.write(params)
+            r = requests.get(endpoint, params=params, timeout=60)
+            r.raise_for_status()
+            data = r.json()
+
+            # get valuation directly
+            val = data.get("Predicted player value (EUR):")
+
+            if val is not None:
+                st.write("### Estimated Valuation")
+                st.write(f"€ {val:,.0f}")
+            else:
+                st.warning("⚠️ No valuation value found in API response.")
+
+        except Exception as e:
+            st.error(f"❌ Request failed: {e}")
