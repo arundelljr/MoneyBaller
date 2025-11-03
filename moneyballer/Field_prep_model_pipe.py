@@ -9,7 +9,7 @@ from sklearn.ensemble import RandomForestRegressor
 
 
 # load data (file path readable by the api app)
-df = pd.read_csv("/Users/admin/Documents/Documents/Le_Wagon/Week_8_Project/Kick_off/FC26_20250921.csv")
+df = pd.read_csv("raw_data/FC26_20250921.csv")
 
 # drop GK
 df = df[~df['player_positions'].str.contains('GK', na=False)]
@@ -56,7 +56,7 @@ Pipe.fit(X, y)
 # Save as pickel and predict on data given from User
 # Save the trained pipeline
 
-with open("player_value_model.pkl", "wb") as file:
+with open("models/player_value_model.pkl", "wb") as file:
     pickle.dump(Pipe, file)
 
 # Load the saved pipeline

@@ -11,6 +11,10 @@ st.set_page_config(page_title="⚽ MoneyBaller", layout="wide")
 
 GET_PLAYER_ID_API_URL = "https://api-974875114263.europe-west1.run.app/get_player_id"
 SIMILAR_ALTERNATIVES_API_URL = "https://api-974875114263.europe-west1.run.app/find_similar_players"
+OUTFIELD_VALUATION_API_URL = "https://api-974875114263.europe-west1.run.app/outfield_valuation"
+GOALKEEPER_VALUATION_API_URL = "https://api-974875114263.europe-west1.run.app/goalkeeper_valuation"
+
+
 
 # --- Session State Initialization ---
 if 'selected_player_id' not in st.session_state:
@@ -258,11 +262,18 @@ if selected_id and selected_details:
         if response.status_code == 200:
             data = response.json()
             if len(data) > 0:
-                df = pd.DataFrame(data)
+                df = pd.DataFrame(data) # is this our df of similar players? This will now be 100
 
                 # Format Value for display and format similarity to percentage
                 df['value_display'] = df['value_eur'].apply(lambda x: f'€{int(x):,}')
                 df['similarity_pct'] = df['similarity'].apply(lambda x: f'{x:.2%}')
+
+                # Take the first given position as a player's primary position (new column)
+                # df['primary_position'] = df['player_positions'].str.split(',').str[0]
+
+                # FILTERING BASED OFF USER's FILTERS will happen here
+                # df = df.head(5)
+                # Preffered_foot, nationaility, position, value_eur
 
                 # Display alternatives in columns
                 alt_cols = st.columns(5)
