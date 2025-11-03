@@ -9,11 +9,13 @@ import base64
 # ==============================
 st.set_page_config(page_title="⚽ MoneyBaller", layout="wide")
 
+# online url: "https://api-974875114263.europe-west1.run.app/"
+# local host: http://127.0.0.1:PORT (change PORT to your local port)
+
 GET_PLAYER_ID_API_URL = "https://api-974875114263.europe-west1.run.app/get_player_id"
 SIMILAR_ALTERNATIVES_API_URL = "https://api-974875114263.europe-west1.run.app/find_similar_players"
 OUTFIELD_VALUATION_API_URL = "https://api-974875114263.europe-west1.run.app/outfield_valuation"
 GOALKEEPER_VALUATION_API_URL = "https://api-974875114263.europe-west1.run.app/goalkeeper_valuation"
-
 
 
 # --- Session State Initialization ---
@@ -264,6 +266,9 @@ if selected_id and selected_details:
             if len(data) > 0:
                 df = pd.DataFrame(data) # is this our df of similar players? This will now be 100
 
+                # Check whether returned dataframe is for Goalkeepers
+                player_is_goalkeeper = df['player_positions'][0] == 'GK'
+
                 # Format Value for display and format similarity to percentage
                 df['value_display'] = df['value_eur'].apply(lambda x: f'€{int(x):,}')
                 df['similarity_pct'] = df['similarity'].apply(lambda x: f'{x:.2%}')
@@ -275,31 +280,62 @@ if selected_id and selected_details:
                 # df = df.head(5)
                 # Preffered_foot, nationaility, position, value_eur
 
-                # Display alternatives in columns
-                alt_cols = st.columns(5)
-                for i, row in df.iterrows():
-                    with alt_cols[i % 5]:
-                        # Dynamically change card color based on similarity score
-                        sim_color = '#00E676' if row['similarity'] >= 0.9 else ('#FFC107' if row['similarity'] >= 0.8 else '#FF5252')
 
-                        img_src = get_image_base64(row.get('player_face_url') or '')
+                if player_is_goalkeeper:
 
-                        # Card structure for similar players
-                        st.markdown(f"""
-                        <div class="player-card large" style="border-left: 5px solid {sim_color}; min-height: 250px;">
-                            <div class="player-header">{row['short_name']}</div>
-                            <img src="{img_src}" alt="player" />
-                            <div class="info-text" style="margin-top: 0.5rem;"></
-                            <div class="info-text">🎯 <b>Similarity:</b> {row['similarity_pct']}</div>
-                            <div class="info-text">📊 <b>OVR:</b> {row['overall']} | <b>POS:</b> {row['player_positions']}</div>
-                            <div class="info-text">💶 <b>Value:</b> {row['value_display']}</div>
-                            <div style="margin-top: 0.75rem;">
-                                <div class="info-text">⚡ Pace: {row['pace']} | 👟 Shooting: {row['shooting']}</div>
-                                <div class="info-text">🎯 Passing: {row['passing']} | 🏃 Dribbling: {row['dribbling']}</div>
-                                <div class="info-text">🛡️ Defending: {row['defending']} | 💪 Physic: {row['physic']}</div>
+                    # Display alternatives in columns
+                    alt_cols = st.columns(5)
+                    for i, row in df.iterrows():
+                        with alt_cols[i % 5]:
+                            # Dynamically change card color based on similarity score
+                            sim_color = '#00E676' if row['similarity'] >= 0.9 else ('#FFC107' if row['similarity'] >= 0.8 else '#FF5252')
+
+                            img_src = get_image_base64(row.get('player_face_url') or '')
+
+                            # Card structure for similar players
+                            st.markdown(f"""
+                            <div class="player-card large" style="border-left: 5px solid {sim_color}; min-height: 250px;">
+                                <div class="player-header">{row['short_name']}</div>
+                                <img src="{img_src}" alt="player" />
+                                <div class="info-text" style="margin-top: 0.5rem;"></
+                                <div class="info-text">🎯 <b>Similarity:</b> {row['similarity_pct']}</div>
+                                <div class="info-text">📊 <b>OVR:</b> {row['overall']} | <b>POS:</b> {row['player_positions']}</div>
+                                <div class="info-text">💶 <b>Value:</b> {row['value_display']}</div>
+                                <div style="margin-top: 0.75rem;">
+                                    <div class="info-text">⚡ Diving: {row['goalkeeping_diving']} | 🎯 Handling: {row['goalkeeping_handling']}</div>
+                                    <div class="info-text">👟 Kicking: {row['goalkeeping_kicking']} | 🛡️ Positioning: {row['goalkeeping_positioning']}</div>
+                                    <div class="info-text">💪 Reflexes: {row['goalkeeping_reflexes']} | 🏃 Speed: {row['goalkeeping_speed']}</div>
+                                </div>
                             </div>
-                        </div>
-                        """, unsafe_allow_html=True)
+                            """, unsafe_allow_html=True)
+
+                else:
+
+                    # Display alternatives in columns
+                    alt_cols = st.columns(5)
+                    for i, row in df.iterrows():
+                        with alt_cols[i % 5]:
+                            # Dynamically change card color based on similarity score
+                            sim_color = '#00E676' if row['similarity'] >= 0.9 else ('#FFC107' if row['similarity'] >= 0.8 else '#FF5252')
+
+                            img_src = get_image_base64(row.get('player_face_url') or '')
+
+                            # Card structure for similar players
+                            st.markdown(f"""
+                            <div class="player-card large" style="border-left: 5px solid {sim_color}; min-height: 250px;">
+                                <div class="player-header">{row['short_name']}</div>
+                                <img src="{img_src}" alt="player" />
+                                <div class="info-text" style="margin-top: 0.5rem;"></
+                                <div class="info-text">🎯 <b>Similarity:</b> {row['similarity_pct']}</div>
+                                <div class="info-text">📊 <b>OVR:</b> {row['overall']} | <b>POS:</b> {row['player_positions']}</div>
+                                <div class="info-text">💶 <b>Value:</b> {row['value_display']}</div>
+                                <div style="margin-top: 0.75rem;">
+                                    <div class="info-text">⚡ Pace: {row['pace']} | 👟 Shooting: {row['shooting']}</div>
+                                    <div class="info-text">🎯 Passing: {row['passing']} | 🏃 Dribbling: {row['dribbling']}</div>
+                                    <div class="info-text">🛡️ Defending: {row['defending']} | 💪 Physic: {row['physic']}</div>
+                                </div>
+                            </div>
+                            """, unsafe_allow_html=True)
             else:
                 st.warning("No similar alternatives found for this player.")
         else:
