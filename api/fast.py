@@ -102,6 +102,9 @@ def find_similar_players(player_id: int):
     if player_id not in X_proj.index:
          raise HTTPException(status_code=404, detail=f"Player ID {player_id} not found in projection data.")
 
+    # Check whether player is goalkeeper
+    player_is_goalkeeper = df.loc[player_id, 'player_positions'] == 'GK'
+
     # Get embedding for the selected player
     x = X_proj.loc[player_id].values.reshape(1, -1)
 
@@ -113,11 +116,21 @@ def find_similar_players(player_id: int):
     # Map positional indices back to player_ids using X_proj index
     similar_player_ids = X_proj.iloc[similar_indices_pos].index.tolist()
 
-    # Get player details from the main DF using player_ids (which are the index)
-    results = df.loc[similar_player_ids][[
-        'short_name', 'player_positions', 'overall', 'pace', 'shooting',
-        'passing', 'dribbling', 'defending', 'physic', 'value_eur', 'player_face_url'
-    ]]
+    if player_is_goalkeeper:
+
+        # Get player details from the main DF using player_ids (which are the index)
+        results = df.loc[similar_player_ids][[
+            'short_name', 'player_positions', 'overall', 'goalkeeping_diving', 'goalkeeping_handling', 'goalkeeping_kicking',
+       'goalkeeping_positioning', 'goalkeeping_reflexes', 'goalkeeping_speed', 'value_eur', 'player_face_url'
+        ]]
+
+    else:
+
+        # Get player details from the main DF using player_ids (which are the index)
+        results = df.loc[similar_player_ids][[
+            'short_name', 'player_positions', 'overall', 'pace', 'shooting',
+            'passing', 'dribbling', 'defending', 'physic', 'value_eur', 'player_face_url'
+        ]]
 
 
     # Calculate similarity
