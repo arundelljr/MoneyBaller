@@ -37,6 +37,15 @@ except Exception as e:
     raise HTTPException(status_code=500, detail="Model loading failed.")
 
 try:
+    # Load the preprocessor position classifier
+    with open("models/preprocessor_position_classifier.pkl", "rb") as file:
+        app.state.preprocessor_position_classifier = pickle.load(file)
+except Exception as e:
+    print(f"Error loading preprocessor_position_classifier.pkl: {e}")
+    app.state.preprocessor_position_classifier = None
+    raise HTTPException(status_code=500, detail="Model loading failed.")
+
+try:
     # Load the saved goalkeeper pipeline
     with open("models/gk_model.pkl", "rb") as file:
         app.state.gk_model = pickle.load(file)
@@ -113,18 +122,32 @@ def find_similar_players(player_id: int):
 # give a player predicted position, give 5 similar alternatives
 # create api and rootpoint
 @app.get("/find_predicted_position")
-def find_predicted_position(feature: int): #function
+def find_predicted_position(age, pace, dribbling, passing, defending, shooting, physic, skill_moves, weak_foot): #function
     position_classifier_model = app.state.position_classifier_model
-    df = app.state.df.reset_index()
+    
+    columns = ['age', 'pace', 'dribbling', 'passing', 'defending', 'shooting', 'physic', 'skill_moves', 'weak_foot']
 
-    detailed_skill_attributes = df[['age', 'pace', 'dribbling', 'passing', 'defending', 'shooting', 'physic', 'skill_moves', 'weak_foot'
-    ]]
+    new_data = pd.DataFrame([{'age' : age,
+                             'pace' : pace,
+                             'dribbling' : dribbling,
+                             'passing' : passing,
+       'defending' : defending, 'shooting' : shooting, 'physic' : physic,
+       'skill_moves' : skill_moves, 'weak_foot' : weak_foot}], columns=columns)
 
-    results = detailed_skill_attributes[
-        detailed_skill_attributes['feature'].str.contains(name, case=False, na=False) |
-            ]
+    
 
-
+    position_classifier_processor = app.state.preprocessor_position_classifier
+    
+    new_data_transformed=position_classifier_processor.transform(new_data)
+    
+    prediction = position_classifier_model.predict(new_data_transformed)
+    
+    # Convert prediction to a native Python type (float)
+    position_prediction = str(prediction[0]) if isinstance(prediction, (np.ndarray, list)) else str(prediction)
+    
+    
+    # return as dictionary/json format
+    return {'position_prediction': position_prediction}
 
 
 
