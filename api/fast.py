@@ -4,7 +4,8 @@ import pickle
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 import numpy as np
-
+from moneyballer.mlp_model import PlayerValuePreprocessor, load_pipeline
+from pathlib import Path
 app = FastAPI()
 
 # --- 1. SETUP & DATA LOADING (CRITICAL FIXES APPLIED) ---
@@ -20,8 +21,8 @@ except Exception as e:
 
 try:
     # Load the saved outfield pipeline
-    with open("models/player_value_model.pkl", "rb") as file:
-        app.state.outfield_model = pickle.load(file)
+    with open(f"{Path(__file__).parent}/../models/gk_model.pkl", "rb") as file:
+        app.state.outfield_model = load_pipeline()
 except Exception as e:
     print(f"Error loading outfield_model.pkl: {e}")
     app.state.outfield_model = None
@@ -30,7 +31,7 @@ except Exception as e:
 
 try:
     # Load the saved goalkeeper pipeline
-    with open("models/gk_model.pkl", "rb") as file:
+    with open(f"{Path(__file__).parent}/../models/gk_model.pkl", "rb") as file:
         app.state.gk_model = pickle.load(file)
 except Exception as e:
     print(f"Error loading gk_model.pkl: {e}")
@@ -131,25 +132,21 @@ def find_similar_players(player_id: int):
 
 # Outfield player vaulation endpoint
 @app.get("/outfield_valuation")
-def outfield_valuation(overall, potential, age, pace,
-       shooting, passing, dribbling, defending, physic):
+def outfield_valuation(age, pace, dribbling, passing,
+       defending, shooting, physic, skill_moves, weak_foot):
 
     outfield_model = app.state.outfield_model
 
-    columns = ['overall', 'potential', 'age', 'pace',
-       'shooting', 'passing', 'dribbling', 'defending', 'physic']
+    columns = ['age', 'pace', 'dribbling', 'passing', 'defending', 'shooting', 'physic', 'skill_moves', 'weak_foot']
 
-    new_data = pd.DataFrame([{'overall' : overall,
-                             'potential' : potential,
-                             'age' : age,
-                             'pace' : pace,
-       'shooting' : shooting, 'passing' : passing, 'dribbling' : dribbling,
-       'defending' : defending, 'physic' : physic}], columns=columns)
+    new_data = pd.DataFrame([{'age' : age,'pace' : pace, 'dribbling' : dribbling,
+       'passing' : passing, 'defending' : defending, 'shooting' : shooting,
+        'physic' : physic , 'skill_moves': skill_moves, 'weak_foot': weak_foot}], columns=columns)
 
     prediction = outfield_model.predict(new_data)
 
     # Convert prediction to a native Python type (float)
-    prediction_value = float(prediction[0]) if isinstance(prediction, (np.ndarray, list)) else float(prediction)
+    prediction_value = np.exp(float(prediction[0])) if isinstance(prediction, (np.ndarray, list)) else float(prediction)
 
     # return as dictionary/json format
     return {'Predicted player value (EUR):': prediction_value}
