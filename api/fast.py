@@ -27,6 +27,14 @@ except Exception as e:
     app.state.outfield_model = None
     raise HTTPException(status_code=500, detail="Model loading failed.")
 
+try:
+    # Load the position classifier
+    with open("models/position_classifier.pkl", "rb") as file:
+        app.state.position_classifier_model = pickle.load(file)
+except Exception as e:
+    print(f"Error loading position_classifier_model.pkl: {e}")
+    app.state.position_classifier_model = None
+    raise HTTPException(status_code=500, detail="Model loading failed.")
 
 try:
     # Load the saved goalkeeper pipeline
@@ -101,6 +109,25 @@ def find_similar_players(player_id: int):
 
     if player_id not in X_proj.index:
          raise HTTPException(status_code=404, detail=f"Player ID {player_id} not found in projection data.")
+     
+# give a player predicted position, give 5 similar alternatives
+# create api and rootpoint
+@app.get("/find_predicted_position")
+def find_predicted_position(feature: int): #function
+    position_classifier_model = app.state.position_classifier_model
+    df = app.state.df.reset_index()
+
+    detailed_skill_attributes = df[['age', 'pace', 'dribbling', 'passing', 'defending', 'shooting', 'physic', 'skill_moves', 'weak_foot'
+    ]]
+
+    results = detailed_skill_attributes[
+        detailed_skill_attributes['feature'].str.contains(name, case=False, na=False) |
+            ]
+
+
+
+
+
 
     # Check whether player is goalkeeper
     player_is_goalkeeper = df.loc[player_id, 'player_positions'] == 'GK'
@@ -201,7 +228,7 @@ def goalkeeper_valuation(goalkeeping_diving, goalkeeping_handling, goalkeeping_k
 def root():
     return {'greeting' : 'Welcome to MoneyBaller'}
 
-#OpenAI - Agent for a chatboot : discover the player you like
+#Google Gemini - Agent for a chatboot : discover the player you like
 @app.post("/generate")
 def generate(prompt: str):
     resp = constmodel.invoke(prompt)
