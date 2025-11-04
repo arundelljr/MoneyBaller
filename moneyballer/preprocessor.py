@@ -68,3 +68,7 @@ X_proj_array = projection_pipeline.fit_transform(X)
 X_proj = pd.DataFrame(X_proj_array, index=X["player_id"].values)
 
 X_proj.to_csv("raw_data/X_proj.csv")
+
+# save knn model as pickel file
+with open("preprocessor.pkl", "wb") as file:
+    pickle.dump(clf, file)
