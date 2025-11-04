@@ -20,7 +20,7 @@ except Exception as e:
 
 try:
     # Load the saved outfield pipeline
-    with open("models/player_value_model.pkl", "rb") as file:
+    with open("models/DeepL_valuation_model.pkl", "rb") as file:
         app.state.outfield_model = pickle.load(file)
 except Exception as e:
     print(f"Error loading outfield_model.pkl: {e}")
@@ -131,25 +131,25 @@ def find_similar_players(player_id: int):
 
 # Outfield player vaulation endpoint
 @app.get("/outfield_valuation")
-def outfield_valuation(overall, potential, age, pace,
-       shooting, passing, dribbling, defending, physic):
+def outfield_valuation(age, pace, shooting, passing,
+       dribbling, defending, physic, skill_moves, weak_foot):
 
     outfield_model = app.state.outfield_model
 
-    columns = ['overall', 'potential', 'age', 'pace',
-       'shooting', 'passing', 'dribbling', 'defending', 'physic']
+    columns = ['age', 'pace', 'shooting', 'passing', 'dribbling', 'defending', 'physic',
+        'skill_moves', 'weak_foot']
 
-    new_data = pd.DataFrame([{'overall' : overall,
-                             'potential' : potential,
-                             'age' : age,
-                             'pace' : pace,
-       'shooting' : shooting, 'passing' : passing, 'dribbling' : dribbling,
-       'defending' : defending, 'physic' : physic}], columns=columns)
+    new_data = pd.DataFrame([{'age': age, 'pace': pace , 'shooting': shooting, 'passing': passing, 'dribbling': dribbling, 'defending': defending, 'physic': physic,
+        'skill_moves': skill_moves, 'weak_foot': weak_foot}], columns=columns)
 
-    prediction = outfield_model.predict(new_data)
+    #prediction in log scale as we have y log transformed during modeling
+    prediction_log = outfield_model.predict(new_data)
 
     # Convert prediction to a native Python type (float)
-    prediction_value = float(prediction[0]) if isinstance(prediction, (np.ndarray, list)) else float(prediction)
+    prediction_log = float(prediction_log[0]) if isinstance(prediction_log, (np.ndarray, list)) else float(prediction_log)
+
+    # Exponentiate to get EUR value
+    prediction_value = np.exp(prediction_log)
 
     # return as dictionary/json format
     return {'Predicted player value (EUR):': prediction_value}
