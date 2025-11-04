@@ -1,4 +1,3 @@
-# app.py - Streamlit Application (ENHANCED, ATTRACTIVE VERSION)
 import streamlit as st
 import requests
 import pandas as pd
@@ -9,13 +8,19 @@ import base64
 # ==============================
 st.set_page_config(page_title="⚽ MoneyBaller", layout="wide")
 
+
 # online url: "https://api-974875114263.europe-west1.run.app/"
 # local host: http://127.0.0.1:PORT (change PORT to your local port)
+
 
 GET_PLAYER_ID_API_URL = "https://api-974875114263.europe-west1.run.app/get_player_id"
 SIMILAR_ALTERNATIVES_API_URL = "https://api-974875114263.europe-west1.run.app/find_similar_players"
 OUTFIELD_VALUATION_API_URL = "https://api-974875114263.europe-west1.run.app/outfield_valuation"
 GOALKEEPER_VALUATION_API_URL = "https://api-974875114263.europe-west1.run.app/goalkeeper_valuation"
+GET_PLAYER_ID_API_URL = "http://127.0.0.1:8000/get_player_id"
+SIMILAR_ALTERNATIVES_API_URL = "http://127.0.0.1:8000/find_similar_players"
+OUTFIELD_VALUATION_API_URL = "http://127.0.0.1:8000/outfield_valuation"
+GOALKEEPER_VALUATION_API_URL = "http://127.0.0.1:8000/goalkeeper_valuation"
 
 
 # --- Session State Initialization ---
@@ -27,12 +32,14 @@ if 'selected_player_details' not in st.session_state:
 if 'player_search' not in st.session_state:
     st.session_state['player_search'] = ''
 
+
 # Clear selection when user starts a new search (fires on text input change / Enter)
 def clear_selected_on_search():
     # Only clear if there is a non-empty search string (prevents accidental clears)
     if st.session_state.get('player_search'):
         st.session_state['selected_player_id'] = None
         st.session_state['selected_player_details'] = None
+
 
 
 # Return image
@@ -56,6 +63,7 @@ def get_image_base64(image_url):
         "</svg>"
     )
     return "data:image/svg+xml;utf8," + svg
+
 
 
 
@@ -100,15 +108,18 @@ st.markdown("""
             min-height: 120px;
         }
 
+
         /* Small card variant (search results) */
         .player-card.small {
             height: 140px;                /* fixed height for alignment across row */
         }
 
+
         /* Large card variant (alternatives grid) */
         .player-card.large {
-            height: 300px;                /* fixed height used for the 5-column alternatives */
+            height: 350px;                /* fixed height used for the 5-column alternatives */
         }
+
 
         /* Ensure images are fixed-size and don't stretch layout */
         .player-card img {
@@ -120,6 +131,7 @@ st.markdown("""
             border: 2px solid #00C853;
         }
 
+
         /* Player Header in Card */
         .player-header {
             font-size: 1.2rem;
@@ -127,6 +139,7 @@ st.markdown("""
             font-weight: bold;
             margin-bottom: 0.5rem;
         }
+
 
         /* Title: single-line ellipsis */
         .player-card .title {
@@ -138,14 +151,22 @@ st.markdown("""
             text-overflow: ellipsis;
         }
 
+
         /* Info Text */
         .info-text {
             color: #9aa0a6;
             font-size: 0.9rem;
             line-height: 1.5;
         }
+
+        /* Adjust filter popup to appear below input */
+        div[data-baseweb="select"] > div {
+            top: 100% !important;
+            transform: none !important;
+        }
     </style>
 """, unsafe_allow_html=True)
+
 
 # ==============================
 # HEADER
@@ -153,6 +174,7 @@ st.markdown("""
 st.markdown("<h1>⚽ MoneyBaller Player Similarity Search</h1>", unsafe_allow_html=True)
 st.markdown("<p style='text-align:center;'>Find the most data-driven football player alternatives.</p>", unsafe_allow_html=True)
 st.divider()
+
 
 
 # ==============================
@@ -167,6 +189,7 @@ with col1:
         on_change=clear_selected_on_search
     )
 
+
 # ==============================
 # FETCH PLAYER LIST
 # ==============================
@@ -176,10 +199,12 @@ if player_name and not st.session_state.get('selected_player_id'):
         with st.spinner(f"🔎 Searching for '{player_name}'..."):
             response = requests.get(GET_PLAYER_ID_API_URL, params={"name": player_name})
 
+
         if response.status_code == 200:
             data = response.json()
             if len(data) > 0:
                 df = pd.DataFrame(data)
+
 
                 # limit displayed results to top N matches to keep cards aligned
                 TOP_N = 9
@@ -187,11 +212,13 @@ if player_name and not st.session_state.get('selected_player_id'):
                 df = df.head(TOP_N)
                 st.markdown(f"### 🧩 Matching Players Found — showing top {len(df)} of {total_matches} matches")
 
+
                 cols = st.columns(3) # Display search results in columns
                 for i, row in df.iterrows():
                     with cols[i % 3]:
                         # Card structure for search results
                         img_src = get_image_base64(row.get('player_face_url') or '')
+
 
                         st.markdown(f"""
                         <div class="player-card small" style="border-left: 8px solid #FF5252; display:flex; align-items:center; gap:1rem;">
@@ -206,6 +233,7 @@ if player_name and not st.session_state.get('selected_player_id'):
                     </div>
                         """, unsafe_allow_html=True)
 
+
                         # Select button logic
                         if st.button("Select Player", key=f"select_{int(row['player_id'])}"):
                             player_id_int = int(row['player_id'])
@@ -214,6 +242,7 @@ if player_name and not st.session_state.get('selected_player_id'):
                             st.toast(f"✅ Selected {row['long_name']}!", icon="⚽")
                             st.rerun()
 
+
             else:
                 st.warning(f"No players found for: **{player_name}**")
         else:
@@ -221,15 +250,18 @@ if player_name and not st.session_state.get('selected_player_id'):
     except Exception as e:
         st.error(f"Error connecting to API: {e}")
 
+
 # ==============================
 # SELECTED PLAYER DETAILS
 # ==============================
 selected_id = st.session_state.get('selected_player_id')
 selected_details = st.session_state.get('selected_player_details')
 
+
 if selected_id and selected_details:
     st.markdown("---")
     st.markdown("## 🎯 Selected Player")
+
 
     img_src = get_image_base64(selected_details.get('player_face_url') or '')
     # Display the selected player in a prominent card
@@ -244,14 +276,17 @@ if selected_id and selected_details:
     </div>
     """, unsafe_allow_html=True)
 
+
     # Add a clear button so the user can go back to search (removes selected player and shows fetch list again)
     if st.button("Clear Selection", key="clear_selection"):
         st.session_state['selected_player_id'] = None
         st.session_state['selected_player_details'] = None
         st.rerun()
 
+
     st.markdown("---")
     st.markdown("## 🧠 Similar Alternatives Found")
+
 
 
     # ==============================
@@ -261,36 +296,90 @@ if selected_id and selected_details:
         with st.spinner("⚙️ Analyzing player embeddings..."):
             response = requests.get(SIMILAR_ALTERNATIVES_API_URL, params={"player_id": selected_id})
 
+
         if response.status_code == 200:
             data = response.json()
             if len(data) > 0:
-                df = pd.DataFrame(data) # is this our df of similar players? This will now be 100
+                df = pd.DataFrame(data) # similar players (usually up to 100)
 
-                # Check whether returned dataframe is for Goalkeepers
-                player_is_goalkeeper = df['player_positions'][0] == 'GK'
+
+                # Check whether the selected player is a goalkeeper (use selected details to be safe)
+                sel_pos = selected_details.get('player_positions') if selected_details else ''
+                player_is_goalkeeper = (sel_pos or '').split(',')[0] == 'GK'
+
 
                 # Format Value for display and format similarity to percentage
                 df['value_display'] = df['value_eur'].apply(lambda x: f'€{int(x):,}')
                 df['similarity_pct'] = df['similarity'].apply(lambda x: f'{x:.2%}')
 
-                # Take the first given position as a player's primary position (new column)
-                # df['primary_position'] = df['player_positions'].str.split(',').str[0]
 
-                # FILTERING BASED OFF USER's FILTERS will happen here
-                # df = df.head(5)
-                # Preffered_foot, nationaility, position, value_eur
+                # Take the first given position as a player's primary position (new column)
+                df['primary_position'] = df['player_positions'].str.strip().str.split(',').str[0].str.upper()
+
+
+                # --- Filters (Nationality + Value + Position + Preferred Foot) ---
+                # Prepare options for nationality, position, and preferred foot
+                nat_options = sorted(df['nationality_name'].dropna().unique().tolist())
+                pos_options = sorted(df['primary_position'].dropna().unique().tolist())
+                foot_options = sorted(df['preferred_foot'].dropna().unique().tolist())
+
+                # Compute value bounds - min_val set to 0 forcibly
+                try:
+                    min_val = 0
+                    max_val = int(df['value_eur'].max()) if pd.notnull(df['value_eur'].max()) else 0
+                except Exception:
+                    min_val, max_val = 0, 0
+
+                # Show filters inside an expander with enhanced heading styling
+                with st.expander("⚽ Player Filters 🎯", expanded=True):
+                    cols_f = st.columns([2, 3, 2, 2])
+                    with cols_f[0]:
+                        selected_nationalities = st.multiselect("🌍 Nationality", options=nat_options, default=[])
+                        selected_positions = st.multiselect("📌 Primary Position", options=pos_options, default=[])
+                    with cols_f[1]:
+                        # value slider; step is coarse so we use an approximate step
+                        step = max(1, (max_val - min_val) // 50) if max_val > min_val else 1
+                        value_range = st.slider("💶 Player value (EUR)", min_val, max_val, (min_val, max_val), step=step)
+                    with cols_f[2]:
+                        # show the readable min/max next to the slider
+                        st.markdown(f"**Min:** {eur(value_range[0]) if 'eur' in globals() else f'€{value_range[0]:,}'}  ")
+                        st.markdown(f"**Max:** {eur(value_range[1]) if 'eur' in globals() else f'€{value_range[1]:,}'}  ")
+                    with cols_f[3]:
+                        selected_feet = st.multiselect("🦶 Preferred Foot", options=foot_options, default=[])
+
+                # Apply filters to the dataframe
+                filtered_df = df.copy()
+                if selected_nationalities:
+                    filtered_df = filtered_df[filtered_df['nationality_name'].isin(selected_nationalities)]
+                if selected_positions:
+                    filtered_df = filtered_df[filtered_df['primary_position'].isin(selected_positions)]
+                if selected_feet:
+                    filtered_df = filtered_df[filtered_df['preferred_foot'].isin(selected_feet)]
+                # ensure numeric comparison
+                filtered_df['value_eur'] = filtered_df['value_eur'].fillna(0)
+                filtered_df = filtered_df[
+                    (filtered_df['value_eur'] >= value_range[0]) & (filtered_df['value_eur'] <= value_range[1])
+                ]
+
+
+                # After filtering, sort by similarity and keep top 5
+                filtered_df = filtered_df.sort_values(by='similarity', ascending=False).head(5).reset_index(drop=True)
+
 
 
                 if player_is_goalkeeper:
 
+
                     # Display alternatives in columns
                     alt_cols = st.columns(5)
-                    for i, row in df.iterrows():
+                    for i, row in filtered_df.iterrows():
                         with alt_cols[i % 5]:
                             # Dynamically change card color based on similarity score
                             sim_color = '#00E676' if row['similarity'] >= 0.9 else ('#FFC107' if row['similarity'] >= 0.8 else '#FF5252')
 
+
                             img_src = get_image_base64(row.get('player_face_url') or '')
+
 
                             # Card structure for similar players
                             st.markdown(f"""
@@ -300,6 +389,8 @@ if selected_id and selected_details:
                                 <div class="info-text" style="margin-top: 0.5rem;"></
                                 <div class="info-text">🎯 <b>Similarity:</b> {row['similarity_pct']}</div>
                                 <div class="info-text">📊 <b>OVR:</b> {row['overall']} | <b>POS:</b> {row['player_positions']}</div>
+                                <div class="info-text">🌍 <b>Nationality:</b> {row['nationality_name']}</div>
+                                <div class="info-text">🦶 <b>Preferred Foot:</b> {row['preferred_foot']}</div>
                                 <div class="info-text">💶 <b>Value:</b> {row['value_display']}</div>
                                 <div style="margin-top: 0.75rem;">
                                     <div class="info-text">⚡ Diving: {row['goalkeeping_diving']} | 🎯 Handling: {row['goalkeeping_handling']}</div>
@@ -309,16 +400,20 @@ if selected_id and selected_details:
                             </div>
                             """, unsafe_allow_html=True)
 
+
                 else:
 
-                    # Display alternatives in columns
+
+                    # Display alternatives in columns (5 columns to show top 5 in one row)
                     alt_cols = st.columns(5)
-                    for i, row in df.iterrows():
+                    for i, row in filtered_df.iterrows():
                         with alt_cols[i % 5]:
                             # Dynamically change card color based on similarity score
                             sim_color = '#00E676' if row['similarity'] >= 0.9 else ('#FFC107' if row['similarity'] >= 0.8 else '#FF5252')
 
+
                             img_src = get_image_base64(row.get('player_face_url') or '')
+
 
                             # Card structure for similar players
                             st.markdown(f"""
@@ -328,6 +423,8 @@ if selected_id and selected_details:
                                 <div class="info-text" style="margin-top: 0.5rem;"></
                                 <div class="info-text">🎯 <b>Similarity:</b> {row['similarity_pct']}</div>
                                 <div class="info-text">📊 <b>OVR:</b> {row['overall']} | <b>POS:</b> {row['player_positions']}</div>
+                                <div class="info-text">🌍 <b>Nationality:</b> {row['nationality_name']}</div>
+                                <div class="info-text">🦶 <b>Preferred Foot:</b> {row['preferred_foot']}</div>
                                 <div class="info-text">💶 <b>Value:</b> {row['value_display']}</div>
                                 <div style="margin-top: 0.75rem;">
                                     <div class="info-text">⚡ Pace: {row['pace']} | 👟 Shooting: {row['shooting']}</div>
@@ -345,7 +442,9 @@ if selected_id and selected_details:
 
 
 
+
 st.markdown("<br><br><hr style='border:2px solid #bbb'><br><br>", unsafe_allow_html=True)
+
 
 # === small helper to format money nicely ===
 def eur(x):
@@ -359,12 +458,15 @@ def eur(x):
         return f"€{x:,.0f}"
     return f"€{x:,.2f}"
 
+
 st.set_page_config(page_title="Simple Player Valuation", page_icon="⚽", layout="wide")
 st.markdown("<h1 style='text-align:center'>⚽ Simple Player Valuation</h1>", unsafe_allow_html=True)
 
 
+
 # 2) Choose which type of player we want to value
 ptype = st.radio("Player type:", ["Outfield", "Goalkeeper"], horizontal=True)
+
 
 # --- build inputs in 3 columns ---
 if ptype == "Outfield":
@@ -383,12 +485,14 @@ if ptype == "Outfield":
         passing = st.slider("passing", 1, 99, 81)
         physic  = st.slider("physic",  1, 99, 79)
 
+
     params   = dict(
         overall=overall, potential=potential, age=age, pace=pace,
         shooting=shooting, passing=passing, dribbling=dribbling,
         defending=defending, physic=physic
     )
     endpoint = OUTFIELD_VALUATION_API_URL
+
 
 else:
     st.subheader("Goalkeeper features")
@@ -406,6 +510,7 @@ else:
         comp     = st.slider("mentality on composure", 1, 99, 70)
         age      = st.slider("age", 15, 45, 24)
 
+
     params = dict(
         goalkeeping_diving=gk_div, goalkeeping_handling=gk_hand,
         goalkeeping_kicking=gk_kick, goalkeeping_positioning=gk_pos,
@@ -413,29 +518,47 @@ else:
         mentality_penalties=pen, mentality_composure=comp, age=age
     )
 
+
     endpoint = GOALKEEPER_VALUATION_API_URL
 
+
 st.divider()
+
 
 
 # --- call API + show nice metric ---
 left, right = st.columns([1, 2])
 
+
 if st.button("💰 Get valuation", type="primary"):
     with st.spinner("Calculating player valuation..."):
         try:
-            st.write("Sending to API:", endpoint)
-            st.write(params)
             r = requests.get(endpoint, params=params, timeout=60)
             r.raise_for_status()
             data = r.json()
 
-            # get valuation directly
+            # Get valuation directly
             val = data.get("Predicted player value (EUR):")
 
+            st.markdown("<hr>", unsafe_allow_html=True)
+
             if val is not None:
-                st.write("### Estimated Valuation")
-                st.write(f"€ {val:,.0f}")
+                st.markdown("### 💰 Estimated Valuation")
+                st.markdown(f"""
+                    <div style="
+                        background: #00C853;
+                        padding: 25px;
+                        border-radius: 12px;
+                        text-align: center;
+                        font-size: 2.5rem;
+                        font-weight: bold;
+                        color: black;
+                        box-shadow: 0 4px 10px rgba(0, 200, 83, 0.6);
+                        margin-top: 10px;
+                    ">
+                        € {val:,.0f}
+                    </div>
+                """, unsafe_allow_html=True)
             else:
                 st.warning("⚠️ No valuation value found in API response.")
 

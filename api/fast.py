@@ -121,7 +121,8 @@ def find_similar_players(player_id: int):
         # Get player details from the main DF using player_ids (which are the index)
         results = df.loc[similar_player_ids][[
             'short_name', 'player_positions', 'overall', 'goalkeeping_diving', 'goalkeeping_handling', 'goalkeeping_kicking',
-       'goalkeeping_positioning', 'goalkeeping_reflexes', 'goalkeeping_speed', 'value_eur', 'player_face_url'
+       'goalkeeping_positioning', 'goalkeeping_reflexes', 'goalkeeping_speed', 'value_eur', 'player_face_url',
+       'nationality_name','preferred_foot'
         ]]
 
     else:
@@ -129,7 +130,8 @@ def find_similar_players(player_id: int):
         # Get player details from the main DF using player_ids (which are the index)
         results = df.loc[similar_player_ids][[
             'short_name', 'player_positions', 'overall', 'pace', 'shooting',
-            'passing', 'dribbling', 'defending', 'physic', 'value_eur', 'player_face_url'
+            'passing', 'dribbling', 'defending', 'physic', 'value_eur', 'player_face_url',
+            'nationality_name','preferred_foot'
         ]]
 
 
