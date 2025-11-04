@@ -20,13 +20,21 @@ except Exception as e:
 
 try:
     # Load the saved outfield pipeline
-    with open("models/player_value_model.pkl", "rb") as file:
+    with open("models/DeepL_valuation_model.pkl", "rb") as file:
         app.state.outfield_model = pickle.load(file)
 except Exception as e:
     print(f"Error loading outfield_model.pkl: {e}")
     app.state.outfield_model = None
     raise HTTPException(status_code=500, detail="Model loading failed.")
 
+try:
+    # Load position predictor model
+    with open("models/outfield_position_predictor.pkl", "rb") as file:
+        app.state.outfield_position_predictor = pickle.load(file)
+except Exception as e:
+    print(f"Error loading outfield_position_predictor.pkl: {e}")
+    app.state.outfield_position_predictor = None
+    raise HTTPException(status_code=500, detail="Model loading failed.")
 
 try:
     # Load the saved goalkeeper pipeline
@@ -156,26 +164,26 @@ def find_similar_players(player_id: int):
 
 # Outfield player vaulation endpoint
 @app.get("/outfield_valuation")
-def outfield_valuation(overall, potential, age, pace,
-       shooting, passing, dribbling, defending, physic):
+def outfield_valuation(age, pace, shooting, passing,
+       dribbling, defending, physic, skill_moves, weak_foot):
 
     # assign model
     outfield_model = app.state.outfield_model
 
-    columns = ['overall', 'potential', 'age', 'pace',
-       'shooting', 'passing', 'dribbling', 'defending', 'physic']
+    columns = ['age', 'pace', 'shooting', 'passing', 'dribbling', 'defending', 'physic',
+        'skill_moves', 'weak_foot']
 
-    new_data = pd.DataFrame([{'overall' : overall,
-                             'potential' : potential,
-                             'age' : age,
-                             'pace' : pace,
-       'shooting' : shooting, 'passing' : passing, 'dribbling' : dribbling,
-       'defending' : defending, 'physic' : physic}], columns=columns)
+    new_data = pd.DataFrame([{'age': age, 'pace': pace , 'shooting': shooting, 'passing': passing, 'dribbling': dribbling, 'defending': defending, 'physic': physic,
+        'skill_moves': skill_moves, 'weak_foot': weak_foot}], columns=columns)
 
-    prediction = outfield_model.predict(new_data)
+    #prediction in log scale as we have y log transformed during modeling
+    prediction_log = outfield_model.predict(new_data)
 
     # Convert prediction to a native Python type (float)
-    prediction_value = float(prediction[0]) if isinstance(prediction, (np.ndarray, list)) else float(prediction)
+    prediction_log = float(prediction_log[0]) if isinstance(prediction_log, (np.ndarray, list)) else float(prediction_log)
+
+    # Exponentiate to get EUR value
+    prediction_value = np.exp(prediction_log)
 
     # return as dictionary/json format
     return {'Predicted player value (EUR):': prediction_value}
@@ -207,6 +215,33 @@ def goalkeeper_valuation(goalkeeping_diving, goalkeeping_handling, goalkeeping_k
 
     # return as dictionary/json format
     return {'Predicted player value (EUR):': prediction_value}
+
+# Player position predictor endpoint
+@app.get("/outfield_position_predictor")
+def outfield_position_predictor(age,
+                                pace, dribbling, passing,
+                                defending, shooting, physic,
+                                skill_moves, weak_foot):
+
+    position_predictor = app.state.outfield_position_predictor
+
+
+    features = ['age',
+                'pace', 'dribbling', 'passing',
+                'defending', 'shooting', 'physic',
+                'skill_moves', 'weak_foot']
+
+    new_data = pd.DataFrame([{'age' : age,
+                            'pace' : pace, 'dribbling' : dribbling,
+                            'passing' : passing, 'defending' : defending,
+                            'shooting' : shooting, 'physic' : physic,
+                            'skill_moves' : skill_moves, 'weak_foot' : weak_foot}],
+                            columns=features)
+
+    prediction = position_predictor.predict(new_data)
+
+    # return as dictionary/json format
+    return {'Suggested Position': prediction[0]}
 
 
 # Goalkeeper player vaulation endpoint
