@@ -200,3 +200,16 @@ def goalkeeper_valuation(goalkeeping_diving, goalkeeping_handling, goalkeeping_k
 @app.get("/")
 def root():
     return {'greeting' : 'Welcome to MoneyBaller'}
+
+#OpenAI - Agent for a chatboot : discover the player you like
+from pydantic import BaseModel
+from langchain.schema import HumanMessage
+import os
+
+const model = new ChatOpenAI({
+    model: "...", // Specify a model available on OpenRouter
+    configuration: {
+    apiKey: "OPENROUTER_API_KEY",
+    baseURL: "https://openrouter.ai/api/v1",
+    }
+});
