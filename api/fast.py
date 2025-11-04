@@ -202,14 +202,7 @@ def root():
     return {'greeting' : 'Welcome to MoneyBaller'}
 
 #OpenAI - Agent for a chatboot : discover the player you like
-from pydantic import BaseModel
-from langchain.schema import HumanMessage
-import os
-
-const model = new ChatOpenAI({
-    model: "...", // Specify a model available on OpenRouter
-    configuration: {
-    apiKey: "OPENROUTER_API_KEY",
-    baseURL: "https://openrouter.ai/api/v1",
-    }
-});
+@app.post("/generate")
+def generate(prompt: str):
+    resp = constmodel.invoke(prompt)
+    return {"text": resp.content if hasattr(resp, "content") else str(resp)}
