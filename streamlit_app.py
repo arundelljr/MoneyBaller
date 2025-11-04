@@ -17,11 +17,13 @@ GET_PLAYER_ID_API_URL = "https://api-974875114263.europe-west1.run.app/get_playe
 SIMILAR_ALTERNATIVES_API_URL = "https://api-974875114263.europe-west1.run.app/find_similar_players"
 OUTFIELD_VALUATION_API_URL = "https://api-974875114263.europe-west1.run.app/outfield_valuation"
 GOALKEEPER_VALUATION_API_URL = "https://api-974875114263.europe-west1.run.app/goalkeeper_valuation"
+POSITION_PREDICTOR_API_URL = "https://api-974875114263.europe-west1.run.app/outfield_position_predictor"
+
 # GET_PLAYER_ID_API_URL = "http://127.0.0.1:8000/get_player_id"
 # SIMILAR_ALTERNATIVES_API_URL = "http://127.0.0.1:8000/find_similar_players"
 # OUTFIELD_VALUATION_API_URL = "http://127.0.0.1:8000/outfield_valuation"
 # GOALKEEPER_VALUATION_API_URL = "http://127.0.0.1:8000/goalkeeper_valuation"
-
+# POSITION_PREDICTOR_API_URL = "http://127.0.0.1:8000/outfield_position_predictor"
 
 # --- Session State Initialization ---
 if 'selected_player_id' not in st.session_state:

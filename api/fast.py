@@ -167,6 +167,8 @@ def find_similar_players(player_id: int):
 def outfield_valuation(age, pace, shooting, passing,
        dribbling, defending, physic, skill_moves, weak_foot):
 
+    # skill_moves and weeak_foot are just [1, 2, 3, 4, 5]
+
     # assign model
     outfield_model = app.state.outfield_model
 
@@ -183,7 +185,7 @@ def outfield_valuation(age, pace, shooting, passing,
     prediction_log = float(prediction_log[0]) if isinstance(prediction_log, (np.ndarray, list)) else float(prediction_log)
 
     # Exponentiate to get EUR value
-    prediction_value = np.exp(prediction_log)
+    prediction_value = round(np.exp(prediction_log), 0)
 
     # return as dictionary/json format
     return {'Predicted player value (EUR):': prediction_value}
