@@ -96,7 +96,8 @@ def get_player_id(name: str):
 
     player_details = df[[
         'player_id', 'long_name', 'short_name', 'nationality_name',
-        'club_name', 'player_positions', 'overall', 'player_face_url'
+        'club_name', 'player_positions', 'overall', 'player_face_url', 'pace', 'shooting',
+            'passing', 'dribbling', 'defending', 'physic', 'value_eur', 'preferred_foot'
     ]]
 
     results = player_details[
