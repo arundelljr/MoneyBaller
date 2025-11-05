@@ -246,32 +246,7 @@ def outfield_position_predictor(age,
     return {'Suggested Position': prediction[0]}
 
 
-# Goalkeeper player vaulation endpoint
-@app.get("/outfield_position_predictor")
-def outfield_position_predictor(age,
-                                pace, dribbling, passing,
-                                defending, shooting, physic,
-                                skill_moves, weak_foot):
 
-    position_predictor = app.state.outfield_position_predictor
-
-
-    features = ['age',
-                'pace', 'dribbling', 'passing',
-                'defending', 'shooting', 'physic',
-                'skill_moves', 'weak_foot']
-
-    new_data = pd.DataFrame([{'age' : age,
-                            'pace' : pace, 'dribbling' : dribbling,
-                            'passing' : passing, 'defending' : defending,
-                            'shooting' : shooting, 'physic' : physic,
-                            'skill_moves' : skill_moves, 'weak_foot' : weak_foot}],
-                            columns=features)
-
-    prediction = position_predictor.predict(new_data)
-
-    # return as dictionary/json format
-    return {'Suggested Position': prediction[0]}
 
 
 # greeting

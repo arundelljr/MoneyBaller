@@ -3,6 +3,9 @@ import requests
 import pandas as pd
 from io import BytesIO
 import base64
+import matplotlib.pyplot as plt
+import matplotlib.patches as patches
+
 # ==============================
 # CONFIG
 # ==============================
@@ -19,11 +22,11 @@ OUTFIELD_VALUATION_API_URL = "https://api-974875114263.europe-west1.run.app/outf
 GOALKEEPER_VALUATION_API_URL = "https://api-974875114263.europe-west1.run.app/goalkeeper_valuation"
 POSITION_PREDICTOR_API_URL = "https://api-974875114263.europe-west1.run.app/outfield_position_predictor"
 
-# GET_PLAYER_ID_API_URL = "http://127.0.0.1:8000/get_player_id"
-# SIMILAR_ALTERNATIVES_API_URL = "http://127.0.0.1:8000/find_similar_players"
-# OUTFIELD_VALUATION_API_URL = "http://127.0.0.1:8000/outfield_valuation"
-# GOALKEEPER_VALUATION_API_URL = "http://127.0.0.1:8000/goalkeeper_valuation"
-# POSITION_PREDICTOR_API_URL = "http://127.0.0.1:8000/outfield_position_predictor"
+# GET_PLAYER_ID_API_URL = "http://0.0.0.0:8000/get_player_id"
+# SIMILAR_ALTERNATIVES_API_URL = "http://0.0.0.0:8000/find_similar_players"
+# OUTFIELD_VALUATION_API_URL = "http://0.0.0.0:8000/outfield_valuation"
+# GOALKEEPER_VALUATION_API_URL = "http://0.0.0.0:8000/goalkeeper_valuation"
+# POSITION_PREDICTOR_API_URL = "http://0.0.0.0:8000/outfield_position_predictor"
 
 # --- Session State Initialization ---
 if 'selected_player_id' not in st.session_state:
@@ -66,6 +69,74 @@ def get_image_base64(image_url):
     )
     return "data:image/svg+xml;utf8," + svg
 
+# Map positions to pitch coordinates
+position_to_coords = {
+    'Goalkeeper': (5, 50),
+    'Full Back': (30, 90),
+    'Central Defender': (20, 50),
+    'Central Midfielder': (50, 50),
+    'Winger': (75, 20),
+    'Forward': (90, 50)
+}
+
+def plot_pitch_with_position(pos, position_to_coords=position_to_coords):
+    fig, ax = plt.subplots(figsize=(10, 7))
+
+    # Pitch background (green grass)
+    ax.set_facecolor('#4CAF50')  # Grass green
+
+    # Pitch Outline
+    pitch_lines = patches.Rectangle((0, 0), 100, 100, linewidth=2, edgecolor='white', facecolor='none')
+    ax.add_patch(pitch_lines)
+
+    # Halfway line
+    ax.plot([50, 50], [0, 100], color='white', linewidth=2)
+
+    # Centre circle and spot
+    centre_circle = patches.Circle((50, 50), 9.15, fill=False, color='white', linewidth=2)
+    centre_spot = patches.Circle((50, 50), 0.8, color='white')
+    ax.add_patch(centre_circle)
+    ax.add_patch(centre_spot)
+
+    # Penalty areas
+    # Left penalty box
+    ax.plot([0, 16.5, 16.5, 0], [33, 33, 67, 67], color='white', linewidth=2)
+    # Right penalty box
+    ax.plot([100, 83.5, 83.5, 100], [33, 33, 67, 67], color='white', linewidth=2)
+
+    # 6-yard boxes
+    ax.plot([0, 5.5, 5.5, 0], [45, 45, 55, 55], color='white', linewidth=2)
+    ax.plot([100, 94.5, 94.5, 100], [45, 45, 55, 55], color='white', linewidth=2)
+
+    # Penalty spots
+    ax.plot(11, 50, 'wo', ms=4)
+    ax.plot(89, 50, 'wo', ms=4)
+
+    # Penalty arcs
+    left_arc = patches.Arc((11, 50), height=18.3, width=18.3, angle=0, theta1=310, theta2=50, color='white', linewidth=2)
+    right_arc = patches.Arc((89, 50), height=18.3, width=18.3, angle=0, theta1=130, theta2=230, color='white', linewidth=2)
+    ax.add_patch(left_arc)
+    ax.add_patch(right_arc)
+
+    # Remove axis ticks
+    ax.set_xticks([])
+    ax.set_yticks([])
+
+    # Set limits to pitch size
+    ax.set_xlim(0, 100)
+    ax.set_ylim(0, 100)
+
+    ax.set_title('Football Pitch: Predicted Position', fontsize=16, color='black')
+
+    # Plot the player position
+    if pos in position_to_coords:
+        x, y = position_to_coords[pos]
+        ax.plot(x, y, 'ro', markersize=18, markeredgecolor='white')
+        ax.text(x, y + 6, pos, fontsize=16, ha='center', color='red', fontweight='bold')
+    else:
+        ax.text(50, 50, 'Position Not Found', fontsize=16, ha='center', color='red', fontweight='bold')
+
+    return fig
 
 
 
@@ -334,20 +405,22 @@ if selected_id and selected_details:
 
                 # Show filters inside an expander with enhanced heading styling
                 with st.expander("⚽ Player Filters 🎯", expanded=True):
-                    cols_f = st.columns([2, 3, 2, 2])
+                    cols_f = st.columns([2, 1, 1])
                     with cols_f[0]:
                         selected_nationalities = st.multiselect("🌍 Nationality", options=nat_options, default=[])
-                        selected_positions = st.multiselect("📌 Primary Position", options=pos_options, default=[])
                     with cols_f[1]:
+                        selected_positions = st.multiselect("📌 Primary Position", options=pos_options, default=[])
+                    with cols_f[2]:
+                        selected_feet = st.multiselect("🦶 Preferred Foot", options=foot_options, default=[])
+                    with cols_f[0]:
                         # value slider; step is coarse so we use an approximate step
                         step = max(1, (max_val - min_val) // 50) if max_val > min_val else 1
                         value_range = st.slider("💶 Player value (EUR)", min_val, max_val, (min_val, max_val), step=step)
-                    with cols_f[2]:
+                    with cols_f[1]:
                         # show the readable min/max next to the slider
                         st.markdown(f"**Min:** {eur(value_range[0]) if 'eur' in globals() else f'€{value_range[0]:,}'}  ")
                         st.markdown(f"**Max:** {eur(value_range[1]) if 'eur' in globals() else f'€{value_range[1]:,}'}  ")
-                    with cols_f[3]:
-                        selected_feet = st.multiselect("🦶 Preferred Foot", options=foot_options, default=[])
+
 
                 # Apply filters to the dataframe
                 filtered_df = df.copy()
@@ -475,25 +548,60 @@ if ptype == "Outfield":
     st.subheader("Outfield features")
     c1, c2, c3 = st.columns(3)
     with c1:
-        overall   = st.slider("overall",   1, 99, 80)
-        pace      = st.slider("pace",      1, 99, 80)
-        dribbling = st.slider("dribbling", 1, 99, 80)
+        age       = st.slider("age 🎂", 15, 45, 23)
+        pace      = st.slider("pace ⚡",      1, 99, 80)
+        dribbling = st.slider("dribbling 🎯", 1, 99, 80)
     with c2:
-        potential = st.slider("potential", 1, 99, 86)
-        shooting  = st.slider("shooting",  1, 99, 78)
-        defending = st.slider("defending", 1, 99, 70)
+        passing   = st.slider("passing 🔄", 1, 99, 81)
+        shooting  = st.slider("shooting 🎯",  1, 99, 78)
+        defending = st.slider("defending 🛡️", 1, 99, 70)
     with c3:
-        age     = st.slider("age", 15, 45, 23)
-        passing = st.slider("passing", 1, 99, 81)
-        physic  = st.slider("physic",  1, 99, 79)
+        skill_moves = st.slider("Skill Moves ⭐", 1, 5, 3)
+        weak_foot   = st.slider("Weak Foot 🤕", 1, 5, 3)
+        physic      = st.slider("physic 💪",  1, 99, 79)
 
 
     params   = dict(
-        overall=overall, potential=potential, age=age, pace=pace,
+        skill_moves=skill_moves, weak_foot=weak_foot, age=age, pace=pace,
         shooting=shooting, passing=passing, dribbling=dribbling,
         defending=defending, physic=physic
     )
-    endpoint = OUTFIELD_VALUATION_API_URL
+    col_val, col_pos = st.columns(2)
+    with col_val:
+        if st.button("💰 Get Valuation"):
+            try:
+                r = requests.get(OUTFIELD_VALUATION_API_URL, params=params, timeout=60)
+                r.raise_for_status()
+                data = r.json()
+                val = data.get("Predicted player value (EUR):")
+                if val is not None:
+                    st.markdown("<hr>", unsafe_allow_html=True)
+                    st.markdown(f"""
+                        <div style='background:#00C853; padding:25px; border-radius:12px; font-size:2.5rem; font-weight:bold; color:black; text-align:center; margin-top:10px;'>
+                            € {val:,.0f}
+                        </div>
+                    """, unsafe_allow_html=True)
+                else:
+                    st.warning("⚠️ No valuation value found in API response.")
+            except Exception as e:
+                st.error(f"❌ Request failed: {e}")
+
+    with col_pos:
+        if st.button("🎯 Predict Position"):
+            try:
+                r = requests.get(POSITION_PREDICTOR_API_URL, params=params, timeout=60)
+                r.raise_for_status()
+                data = r.json()
+                pos = data.get("Suggested Position")
+                if pos:
+                    st.markdown("<hr>", unsafe_allow_html=True)
+                    st.success(f"Suggested Position: **{pos}**")
+                    fig = plot_pitch_with_position(pos)
+                    st.pyplot(fig)
+                else:
+                    st.warning("⚠️ No position prediction found in API response.")
+            except Exception as e:
+                st.error(f"❌ Request failed: {e}")
 
 
 else:
@@ -519,50 +627,22 @@ else:
         goalkeeping_reflexes=gk_ref, goalkeeping_speed=gk_speed,
         mentality_penalties=pen, mentality_composure=comp, age=age
     )
-
-
-    endpoint = GOALKEEPER_VALUATION_API_URL
-
-
-st.divider()
-
-
-
-# --- call API + show nice metric ---
-left, right = st.columns([1, 2])
-
-
-if st.button("💰 Get valuation", type="primary"):
-    with st.spinner("Calculating player valuation..."):
-        try:
-            r = requests.get(endpoint, params=params, timeout=60)
-            r.raise_for_status()
-            data = r.json()
-
-            # Get valuation directly
-            val = data.get("Predicted player value (EUR):")
-
-            st.markdown("<hr>", unsafe_allow_html=True)
-
-            if val is not None:
-                st.markdown("### 💰 Estimated Valuation")
-                st.markdown(f"""
-                    <div style="
-                        background: #00C853;
-                        padding: 25px;
-                        border-radius: 12px;
-                        text-align: center;
-                        font-size: 2.5rem;
-                        font-weight: bold;
-                        color: black;
-                        box-shadow: 0 4px 10px rgba(0, 200, 83, 0.6);
-                        margin-top: 10px;
-                    ">
-                        € {val:,.0f}
-                    </div>
-                """, unsafe_allow_html=True)
-            else:
-                st.warning("⚠️ No valuation value found in API response.")
-
-        except Exception as e:
-            st.error(f"❌ Request failed: {e}")
+    col_val, col_pos = st.columns(2)
+    with col_val:
+        if st.button("💰 Get Valuation (Goalkeeper)"):
+            try:
+                r = requests.get(GOALKEEPER_VALUATION_API_URL, params=params, timeout=60)
+                r.raise_for_status()
+                data = r.json()
+                val = data.get("Predicted player value (EUR):")
+                if val is not None:
+                    st.markdown("<hr>", unsafe_allow_html=True)
+                    st.markdown(f"""
+                        <div style='background:#00C853; padding:25px; border-radius:12px; font-size:2.5rem; font-weight:bold; color:black; text-align:center; margin-top:10px;'>
+                            € {val:,.0f}
+                        </div>
+                    """, unsafe_allow_html=True)
+                else:
+                    st.warning("⚠️ No valuation value found in API response.")
+            except Exception as e:
+                st.error(f"❌ Request failed: {e}")
