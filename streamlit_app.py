@@ -1,6 +1,7 @@
 import streamlit as st
 import requests
 import pandas as pd
+import numpy as np
 from io import BytesIO
 import base64
 import matplotlib.pyplot as plt
@@ -22,11 +23,11 @@ OUTFIELD_VALUATION_API_URL = "https://api-974875114263.europe-west1.run.app/outf
 GOALKEEPER_VALUATION_API_URL = "https://api-974875114263.europe-west1.run.app/goalkeeper_valuation"
 POSITION_PREDICTOR_API_URL = "https://api-974875114263.europe-west1.run.app/outfield_position_predictor"
 
-# GET_PLAYER_ID_API_URL = "http://0.0.0.0:8000/get_player_id"
-# SIMILAR_ALTERNATIVES_API_URL = "http://0.0.0.0:8000/find_similar_players"
-# OUTFIELD_VALUATION_API_URL = "http://0.0.0.0:8000/outfield_valuation"
-# GOALKEEPER_VALUATION_API_URL = "http://0.0.0.0:8000/goalkeeper_valuation"
-# POSITION_PREDICTOR_API_URL = "http://0.0.0.0:8000/outfield_position_predictor"
+# GET_PLAYER_ID_API_URL = "http://127.0.0.1:1234/get_player_id"
+# SIMILAR_ALTERNATIVES_API_URL = "http://127.0.0.1:1234/find_similar_players"
+# OUTFIELD_VALUATION_API_URL = "http://127.0.0.1:1234/outfield_valuation"
+# GOALKEEPER_VALUATION_API_URL = "http://127.0.0.1:1234/goalkeeper_valuation"
+# POSITION_PREDICTOR_API_URL = "http://127.0.0.1:1234/outfield_position_predictor"
 
 # --- Session State Initialization ---
 if 'selected_player_id' not in st.session_state:
@@ -547,6 +548,7 @@ ptype = st.radio("Player type:", ["Outfield", "Goalkeeper"], horizontal=True)
 if ptype == "Outfield":
     st.subheader("Outfield features")
     c1, c2, c3 = st.columns(3)
+
     with c1:
         age       = st.slider("age 🎂", 15, 45, 23)
         pace      = st.slider("pace ⚡",      1, 99, 80)
@@ -558,8 +560,15 @@ if ptype == "Outfield":
     with c3:
         skill_moves = st.slider("Skill Moves ⭐", 1, 5, 3)
         weak_foot   = st.slider("Weak Foot 🤕", 1, 5, 3)
-        physic      = st.slider("physic 💪",  1, 99, 79)
+        physic     = st.slider("physic 💪",  1, 99, 79)
 
+    # # Apply capping based on df min/max
+    # pace      = np.clip(pace_raw, 30, 97)
+    # dribbling = np.clip(dribbling_raw, 22, 93)
+    # passing   = np.clip(passing_raw, 25, 92)
+    # shooting  = np.clip(shooting_raw, 21, 92)
+    # defending = np.clip(defending_raw, 15, 90)
+    # physic      = np.clip(physic_raw, 32, 91)
 
     params   = dict(
         skill_moves=skill_moves, weak_foot=weak_foot, age=age, pace=pace,
@@ -575,12 +584,21 @@ if ptype == "Outfield":
                 data = r.json()
                 val = data.get("Predicted player value (EUR):")
                 if val is not None:
-                    st.markdown("<hr>", unsafe_allow_html=True)
-                    st.markdown(f"""
-                        <div style='background:#00C853; padding:25px; border-radius:12px; font-size:2.5rem; font-weight:bold; color:black; text-align:center; margin-top:10px;'>
-                            € {val:,.0f}
-                        </div>
-                    """, unsafe_allow_html=True)
+                    if val > 300_000_000:
+                        st.warning("⚠️ The predicted valuation is extremely high (over €300 million). Please verify the input features.")
+                        st.markdown("<hr>", unsafe_allow_html=True)
+                        st.markdown(f"""
+                            <div style='background:#00C853; padding:25px; border-radius:12px; font-size:2.5rem; font-weight:bold; color:black; text-align:center; margin-top:10px;'>
+                                > € 300,000,000
+                            </div>
+                        """, unsafe_allow_html=True)
+                    else:
+                        st.markdown("<hr>", unsafe_allow_html=True)
+                        st.markdown(f"""
+                            <div style='background:#00C853; padding:25px; border-radius:12px; font-size:2.5rem; font-weight:bold; color:black; text-align:center; margin-top:10px;'>
+                                € {val:,.0f}
+                            </div>
+                        """, unsafe_allow_html=True)
                 else:
                     st.warning("⚠️ No valuation value found in API response.")
             except Exception as e:
