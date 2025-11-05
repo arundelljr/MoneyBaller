@@ -1,7 +1,6 @@
 import streamlit as st
 import requests
 import pandas as pd
-import numpy as np
 from io import BytesIO
 import base64
 import matplotlib.pyplot as plt
@@ -23,11 +22,11 @@ OUTFIELD_VALUATION_API_URL = "https://api-974875114263.europe-west1.run.app/outf
 GOALKEEPER_VALUATION_API_URL = "https://api-974875114263.europe-west1.run.app/goalkeeper_valuation"
 POSITION_PREDICTOR_API_URL = "https://api-974875114263.europe-west1.run.app/outfield_position_predictor"
 
-# GET_PLAYER_ID_API_URL = "http://127.0.0.1:1234/get_player_id"
-# SIMILAR_ALTERNATIVES_API_URL = "http://127.0.0.1:1234/find_similar_players"
-# OUTFIELD_VALUATION_API_URL = "http://127.0.0.1:1234/outfield_valuation"
-# GOALKEEPER_VALUATION_API_URL = "http://127.0.0.1:1234/goalkeeper_valuation"
-# POSITION_PREDICTOR_API_URL = "http://127.0.0.1:1234/outfield_position_predictor"
+#GET_PLAYER_ID_API_URL = "http://0.0.0.0:8000/get_player_id"
+# SIMILAR_ALTERNATIVES_API_URL = "http://0.0.0.0:8000/find_similar_players"
+# OUTFIELD_VALUATION_API_URL = "http://0.0.0.0:8000/outfield_valuation"
+# GOALKEEPER_VALUATION_API_URL = "http://0.0.0.0:8000/goalkeeper_valuation"
+# POSITION_PREDICTOR_API_URL = "http://0.0.0.0:8000/outfield_position_predictor"
 
 # --- Session State Initialization ---
 if 'selected_player_id' not in st.session_state:
@@ -331,32 +330,73 @@ if player_name and not st.session_state.get('selected_player_id'):
 selected_id = st.session_state.get('selected_player_id')
 selected_details = st.session_state.get('selected_player_details')
 
-
 if selected_id and selected_details:
     st.markdown("---")
     st.markdown("## 🎯 Selected Player")
 
-
     img_src = get_image_base64(selected_details.get('player_face_url') or '')
-    # Display the selected player in a prominent card
-    st.markdown(f"""
-    <div class="player-card" style="border-left: 8px solid #FF5252; text-align: center;">
-        <img src="{img_src}" alt="selected player" style="width:160px; height:160px; object-fit:cover; border-radius:8px; border:3px solid #FF5252;" />
-        <h3 style="color: #FF5252; margin-top: 0; margin-bottom: 0.5rem;">{selected_details.get('long_name')} ({selected_details.get('overall')})</h3>
-        <div class="info-text">
-            <b>ID:</b> {selected_id} | <b>Club:</b> {selected_details.get('club_name')} |
-            <b>Position(s):</b> {selected_details.get('player_positions')}
+    sel_pos = str(selected_details.get('player_positions', ''))
+    is_goalkeeper = sel_pos.split(',')[0].strip().upper() == "GK"
+    similarity = selected_details.get('similarity')
+    similarity_pct = f"{similarity:.2%}" if (similarity is not None and isinstance(similarity, (float, int))) else "—"
+
+    # Value formatting safely
+    if selected_details.get('value_eur') is not None:
+        value_str = f"€{int(selected_details['value_eur']):,}"
+    else:
+        value_str = "—"
+
+    # Split features
+    left_features = [
+        f"<span>🏟️ <b>Club:</b> {selected_details.get('club_name','—')}</span>",
+        f"<span>💶 <b>Value:</b> {value_str}</span>",
+        f"<span>🌍 <b>Nationality:</b> {selected_details.get('nationality_name','—')}</span>",
+
+    ]
+    right_features = (
+        [
+            f"<span>📌 <b>Position(s):</b> {selected_details.get('player_positions','—')}</span>",
+            f"<span>🦶 <b>Foot:</b> {selected_details.get('preferred_foot','—')}</span>",
+            f"<span>⚡ <b>Diving:</b> {selected_details.get('goalkeeping_diving','—')}  🎯 <b>Handling:</b> {selected_details.get('goalkeeping_handling','—')}</span>",
+            f"<span>👟 <b>Kicking:</b> {selected_details.get('goalkeeping_kicking','—')}  🛡️ <b>Positioning:</b> {selected_details.get('goalkeeping_positioning','—')}</span>",
+            f"<span>💪 <b>Reflexes:</b> {selected_details.get('goalkeeping_reflexes','—')}  🏃 <b>Speed:</b> {selected_details.get('goalkeeping_speed','—')}</span>"
+        ] if is_goalkeeper
+        else [
+            f"<span>📌 <b>Position(s):</b> {selected_details.get('player_positions','—')}</span>",
+            f"<span>🦶 <b>Foot:</b> {selected_details.get('preferred_foot','—')}</span>",
+            f"<span>⚡ <b>Pace:</b> {selected_details.get('pace','—')}  👟 <b>Shooting:</b> {selected_details.get('shooting','—')}</span>",
+            f"<span>🎯 <b>Passing:</b> {selected_details.get('passing','—')}  🏃 <b>Dribbling:</b> {selected_details.get('dribbling','—')}</span>",
+            f"<span>🛡️ <b>Defending:</b> {selected_details.get('defending','—')}  💪 <b>Physic:</b> {selected_details.get('physic','—')}</span>"
+        ]
+    )
+
+    st.markdown(
+        f"""
+        <div class="player-card large" style="width:100%; max-width:630px; min-height: 450px; margin: 0 auto; border-left:8px solid #FF5252; padding:38px 16px 24px 16px; display: flex; flex-direction: column; align-items: center;">
+            <img src="{img_src}" alt="player" class="player-img" style="width: 120px; height:120px; border:3px solid #FF5252; margin-bottom: 8px; box-shadow:0 0 18px #222;" />
+            <div style="font-size:1.22rem; font-family:sans-serif; font-weight:800; color:#FF5252; margin-bottom:2px; text-align:center;">
+                {selected_details.get('long_name','—')} <span style="color:#ccc; font-weight:500;">({selected_details.get('overall','—')})</span>
+            </div>
+            <div style="font-size:1.01rem; color:#888; margin-bottom:18px; letter-spacing:0.02em; text-align:center;">
+                ID: {selected_id}
+            </div>
+            <div style="display:flex; width:100%; max-width:540px; margin:10px auto 2px auto; align-items:flex-start; justify-content:space-between;">
+                <div style="flex:1; text-align:left; padding-right:18px; font-size:1.06rem; color:#f0f0f0;">
+                    {'<br>'.join(left_features)}
+                </div>
+                <div style="flex:1; text-align:left; padding-left:18px; font-size:1.06rem; color:#f0f0f0;">
+                    {'<br>'.join(right_features)}
+                </div>
+            </div>
         </div>
-    </div>
-    """, unsafe_allow_html=True)
+        """,
+        unsafe_allow_html=True
+    )
 
-
-    # Add a clear button so the user can go back to search (removes selected player and shows fetch list again)
     if st.button("Clear Selection", key="clear_selection"):
         st.session_state['selected_player_id'] = None
         st.session_state['selected_player_details'] = None
         st.rerun()
-
 
     st.markdown("---")
     st.markdown("## 🧠 Similar Alternatives Found")
@@ -548,7 +588,6 @@ ptype = st.radio("Player type:", ["Outfield", "Goalkeeper"], horizontal=True)
 if ptype == "Outfield":
     st.subheader("Outfield features")
     c1, c2, c3 = st.columns(3)
-
     with c1:
         age       = st.slider("age 🎂", 15, 45, 23)
         pace      = st.slider("pace ⚡",      1, 99, 80)
@@ -560,15 +599,8 @@ if ptype == "Outfield":
     with c3:
         skill_moves = st.slider("Skill Moves ⭐", 1, 5, 3)
         weak_foot   = st.slider("Weak Foot 🤕", 1, 5, 3)
-        physic     = st.slider("physic 💪",  1, 99, 79)
+        physic      = st.slider("physic 💪",  1, 99, 79)
 
-    # # Apply capping based on df min/max
-    # pace      = np.clip(pace_raw, 30, 97)
-    # dribbling = np.clip(dribbling_raw, 22, 93)
-    # passing   = np.clip(passing_raw, 25, 92)
-    # shooting  = np.clip(shooting_raw, 21, 92)
-    # defending = np.clip(defending_raw, 15, 90)
-    # physic      = np.clip(physic_raw, 32, 91)
 
     params   = dict(
         skill_moves=skill_moves, weak_foot=weak_foot, age=age, pace=pace,
@@ -584,21 +616,12 @@ if ptype == "Outfield":
                 data = r.json()
                 val = data.get("Predicted player value (EUR):")
                 if val is not None:
-                    if val > 300_000_000:
-                        st.warning("⚠️ The predicted valuation is extremely high (over €300 million). Please verify the input features.")
-                        st.markdown("<hr>", unsafe_allow_html=True)
-                        st.markdown(f"""
-                            <div style='background:#00C853; padding:25px; border-radius:12px; font-size:2.5rem; font-weight:bold; color:black; text-align:center; margin-top:10px;'>
-                                > € 300,000,000
-                            </div>
-                        """, unsafe_allow_html=True)
-                    else:
-                        st.markdown("<hr>", unsafe_allow_html=True)
-                        st.markdown(f"""
-                            <div style='background:#00C853; padding:25px; border-radius:12px; font-size:2.5rem; font-weight:bold; color:black; text-align:center; margin-top:10px;'>
-                                € {val:,.0f}
-                            </div>
-                        """, unsafe_allow_html=True)
+                    st.markdown("<hr>", unsafe_allow_html=True)
+                    st.markdown(f"""
+                        <div style='background:#00C853; padding:25px; border-radius:12px; font-size:2.5rem; font-weight:bold; color:black; text-align:center; margin-top:10px;'>
+                            € {val:,.0f}
+                        </div>
+                    """, unsafe_allow_html=True)
                 else:
                     st.warning("⚠️ No valuation value found in API response.")
             except Exception as e:
