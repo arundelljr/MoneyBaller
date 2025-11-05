@@ -381,10 +381,10 @@ if selected_id and selected_details:
                 ID: {selected_id}
             </div>
             <div style="display:flex; width:100%; max-width:540px; margin:10px auto 2px auto; align-items:flex-start; justify-content:space-between;">
-                <div style="flex:1; text-align:left; padding-right:18px; font-size:1.06rem; color:#f0f0f0;">
+                <div style="flex:1; text-align:left; padding-right:10px; font-size:1.06rem; color:#f0f0f0;">
                     {'<br>'.join(left_features)}
                 </div>
-                <div style="flex:1; text-align:left; padding-left:18px; font-size:1.06rem; color:#f0f0f0;">
+                <div style="flex:1; text-align:left; padding-left:10px; font-size:1.06rem; color:#f0f0f0;">
                     {'<br>'.join(right_features)}
                 </div>
             </div>
