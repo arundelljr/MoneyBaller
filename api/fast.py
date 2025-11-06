@@ -3,6 +3,8 @@ import pandas as pd
 import pickle
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.encoders import jsonable_encoder
+from fastapi.responses import ORJSONResponse
 import numpy as np
 
 app = FastAPI()
@@ -88,7 +90,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# give a name, return a list of players, displaying their player ID
 @app.get("/get_player_id")
 def get_player_id(name: str):
     # Reset index temporarily for search, and include 'overall'
@@ -96,8 +97,12 @@ def get_player_id(name: str):
 
     player_details = df[[
         'player_id', 'long_name', 'short_name', 'nationality_name',
-        'club_name', 'player_positions', 'overall', 'player_face_url', 'pace', 'shooting',
-            'passing', 'dribbling', 'defending', 'physic', 'value_eur', 'preferred_foot'
+        'club_name', 'player_positions', 'overall', 'player_face_url',
+        'pace', 'shooting', 'passing', 'dribbling', 'defending',
+        'physic', 'value_eur', 'preferred_foot', 'age', 'league_name', 'club_contract_valid_until_year',
+
+        'goalkeeping_diving', 'goalkeeping_handling', 'goalkeeping_kicking',
+        'goalkeeping_positioning', 'goalkeeping_reflexes', 'goalkeeping_speed'
     ]]
 
     results = player_details[
@@ -105,10 +110,15 @@ def get_player_id(name: str):
         player_details['short_name'].str.contains(name, case=False, na=False)
     ]
 
-    # Make JSON-safe: replace +/-inf, convert NaN to None, and ensure Python native types
-    results = results.replace([np.inf, -np.inf], np.nan)
-    records = results.where(pd.notnull(results), None).to_dict(orient='records')
-    return records
+    # Enforce hard limit
+    limited_df = results.head(50)
+
+    # Make JSON-safe: replace +/-inf and convert NaN -> None
+    limited_df = limited_df.replace([np.inf, -np.inf], np.nan)
+    records = limited_df.where(pd.notnull(limited_df), None).to_dict(orient='records')
+
+    # Return only the items list
+    return ORJSONResponse(jsonable_encoder(records))
 
 
 # give a player ID, give 5 similar alternatives
@@ -139,18 +149,18 @@ def find_similar_players(player_id: int):
 
         # Get player details from the main DF using player_ids (which are the index)
         results = df.loc[similar_player_ids][[
-            'short_name', 'player_positions', 'overall', 'goalkeeping_diving', 'goalkeeping_handling', 'goalkeeping_kicking',
+            'short_name', 'long_name', 'player_positions', 'overall', 'goalkeeping_diving', 'goalkeeping_handling', 'goalkeeping_kicking',
        'goalkeeping_positioning', 'goalkeeping_reflexes', 'goalkeeping_speed', 'value_eur', 'player_face_url',
-       'nationality_name','preferred_foot'
+       'nationality_name','preferred_foot', 'age', 'league_name', 'club_contract_valid_until_year', 'club_name'
         ]]
 
     else:
 
         # Get player details from the main DF using player_ids (which are the index)
         results = df.loc[similar_player_ids][[
-            'short_name', 'player_positions', 'overall', 'pace', 'shooting',
+            'short_name', 'long_name', 'player_positions', 'overall', 'pace', 'shooting',
             'passing', 'dribbling', 'defending', 'physic', 'value_eur', 'player_face_url',
-            'nationality_name','preferred_foot'
+            'nationality_name','preferred_foot', 'age', 'league_name', 'club_contract_valid_until_year', 'club_name'
         ]]
 
 
@@ -160,7 +170,8 @@ def find_similar_players(player_id: int):
     # Make JSON-safe before returning
     clean = results.replace([np.inf, -np.inf], np.nan)
     clean = clean.where(pd.notnull(clean), None)
-    return clean.reset_index(names='player_id').to_dict(orient='records')
+    records = clean.reset_index(names='player_id').to_dict(orient='records')
+    return ORJSONResponse(jsonable_encoder(records))
 
 
 # Outfield player vaulation endpoint
