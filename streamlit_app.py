@@ -22,17 +22,22 @@ OUTFIELD_VALUATION_API_URL = "https://api-974875114263.europe-west1.run.app/outf
 GOALKEEPER_VALUATION_API_URL = "https://api-974875114263.europe-west1.run.app/goalkeeper_valuation"
 POSITION_PREDICTOR_API_URL = "https://api-974875114263.europe-west1.run.app/outfield_position_predictor"
 
-#GET_PLAYER_ID_API_URL = "http://0.0.0.0:8000/get_player_id"
-# SIMILAR_ALTERNATIVES_API_URL = "http://0.0.0.0:8000/find_similar_players"
-# OUTFIELD_VALUATION_API_URL = "http://0.0.0.0:8000/outfield_valuation"
-# GOALKEEPER_VALUATION_API_URL = "http://0.0.0.0:8000/goalkeeper_valuation"
-# POSITION_PREDICTOR_API_URL = "http://0.0.0.0:8000/outfield_position_predictor"
+# GET_PLAYER_ID_API_URL = "http://127.0.0.1:1234/get_player_id"
+# SIMILAR_ALTERNATIVES_API_URL = "http://127.0.0.1:1234/find_similar_players"
+# OUTFIELD_VALUATION_API_URL = "http://127.0.0.1:1234/outfield_valuation"
+# GOALKEEPER_VALUATION_API_URL = "http://127.0.0.1:1234/goalkeeper_valuation"
+# POSITION_PREDICTOR_API_URL = "http://127.0.0.1:1234/outfield_position_predictor"
 
 # --- Session State Initialization ---
 if 'selected_player_id' not in st.session_state:
     st.session_state['selected_player_id'] = None
 if 'selected_player_details' not in st.session_state:
     st.session_state['selected_player_details'] = None
+# selected similar alternative (for comparison)
+if 'selected_alternative_id' not in st.session_state:
+    st.session_state['selected_alternative_id'] = None
+if 'selected_alternative_details' not in st.session_state:
+    st.session_state['selected_alternative_details'] = None
 # store last search value (optional)
 if 'player_search' not in st.session_state:
     st.session_state['player_search'] = ''
@@ -44,6 +49,9 @@ def clear_selected_on_search():
     if st.session_state.get('player_search'):
         st.session_state['selected_player_id'] = None
         st.session_state['selected_player_details'] = None
+        # also clear any previously selected alternative when doing a new search
+        st.session_state['selected_alternative_id'] = None
+        st.session_state['selected_alternative_details'] = None
 
 
 
@@ -126,7 +134,7 @@ def plot_pitch_with_position(pos, position_to_coords=position_to_coords):
     ax.set_xlim(0, 100)
     ax.set_ylim(0, 100)
 
-    ax.set_title('Football Pitch: Predicted Position', fontsize=16, color='black')
+    ax.set_title('Suggested Position', fontsize=16, color='black')
 
     # Plot the player position
     if pos in position_to_coords:
@@ -137,7 +145,6 @@ def plot_pitch_with_position(pos, position_to_coords=position_to_coords):
         ax.text(50, 50, 'Position Not Found', fontsize=16, ha='center', color='red', fontweight='bold')
 
     return fig
-
 
 
 # ==============================
@@ -253,14 +260,13 @@ st.divider()
 # ==============================
 # PLAYER SEARCH INPUT
 # ==============================
-col1, col2 = st.columns([3, 1])
-with col1:
-    player_name = st.text_input(
-        "🔍 **Search for a Player**",
-        placeholder="e.g. Kylian Mbappé or Nkunku",
-        key="player_search",
-        on_change=clear_selected_on_search
-    )
+
+player_name = st.text_input(
+    "🔍 **Search for a Player**",
+    placeholder="e.g. Mbappé or Ederson",
+    key="player_search",
+    on_change=clear_selected_on_search
+)
 
 
 # ==============================
@@ -299,7 +305,7 @@ if player_name and not st.session_state.get('selected_player_id'):
                         <div style="flex:1 1 auto; text-align:left;">
                             <h3 class="title">{row.get('short_name')} ({row.get('overall')})</h3>
                             <div class="info-text" style="margin-top:0.25rem;">
-                                <b>ID:</b> {row['player_id']} | <b>Club:</b> {row['club_name']} |
+                                <b>ID:</b> {row['player_id']} | <b>Club:</b> {row['club_name']}<br>
                                 <b>Position(s):</b> {row['player_positions']}
                             </div>
                         </div>
@@ -349,24 +355,25 @@ if selected_id and selected_details:
     # Split features
     left_features = [
         f"<span>🏟️ <b>Club:</b> {selected_details.get('club_name','—')}</span>",
-        f"<span>💶 <b>Value:</b> {value_str}</span>",
+        f"<span>🏆 <b>League:</b> {selected_details.get('league_name','—')}</span>",
         f"<span>🌍 <b>Nationality:</b> {selected_details.get('nationality_name','—')}</span>",
-
+        f"<span>💶 <b>Value:</b> {value_str}</span>",
+        f"<span>📅 <b>Age:</b> {selected_details.get('age','—')}</span>"
     ]
     right_features = (
         [
             f"<span>📌 <b>Position(s):</b> {selected_details.get('player_positions','—')}</span>",
             f"<span>🦶 <b>Foot:</b> {selected_details.get('preferred_foot','—')}</span>",
-            f"<span>⚡ <b>Diving:</b> {selected_details.get('goalkeeping_diving','—')}  🎯 <b>Handling:</b> {selected_details.get('goalkeeping_handling','—')}</span>",
-            f"<span>👟 <b>Kicking:</b> {selected_details.get('goalkeeping_kicking','—')}  🛡️ <b>Positioning:</b> {selected_details.get('goalkeeping_positioning','—')}</span>",
-            f"<span>💪 <b>Reflexes:</b> {selected_details.get('goalkeeping_reflexes','—')}  🏃 <b>Speed:</b> {selected_details.get('goalkeeping_speed','—')}</span>"
+            f"<span>🤾 <b>Diving:</b> {int(selected_details.get('goalkeeping_diving','—'))} | 🤲 <b>Handling:</b> {int(selected_details.get('goalkeeping_handling','—'))}</span>",
+            f"<span>👟 <b>Kicking:</b> {int(selected_details.get('goalkeeping_kicking','—'))} | 📍 <b>Positioning:</b> {int(selected_details.get('goalkeeping_positioning','—'))}</span>",
+            f"<span>⚡ <b>Reflexes:</b> {int(selected_details.get('goalkeeping_reflexes','—'))} | 🏃‍♂️ <b>Speed:</b> {int(selected_details.get('goalkeeping_speed','—'))}</span>"
         ] if is_goalkeeper
         else [
             f"<span>📌 <b>Position(s):</b> {selected_details.get('player_positions','—')}</span>",
             f"<span>🦶 <b>Foot:</b> {selected_details.get('preferred_foot','—')}</span>",
-            f"<span>⚡ <b>Pace:</b> {selected_details.get('pace','—')}  👟 <b>Shooting:</b> {selected_details.get('shooting','—')}</span>",
-            f"<span>🎯 <b>Passing:</b> {selected_details.get('passing','—')}  🏃 <b>Dribbling:</b> {selected_details.get('dribbling','—')}</span>",
-            f"<span>🛡️ <b>Defending:</b> {selected_details.get('defending','—')}  💪 <b>Physic:</b> {selected_details.get('physic','—')}</span>"
+            f"<span>⚡ <b>Pace:</b> {int(selected_details.get('pace','—'))} | 👟 <b>Shooting:</b> {int(selected_details.get('shooting','—'))}</span>",
+            f"<span>🎯 <b>Passing:</b> {int(selected_details.get('passing','—'))} | 🏃 <b>Dribbling:</b> {int(selected_details.get('dribbling','—'))}</span>",
+            f"<span>🛡️ <b>Defending:</b> {int(selected_details.get('defending','—'))} | 💪 <b>Physic:</b> {int(selected_details.get('physic','—'))}</span>"
         ]
     )
 
@@ -434,6 +441,7 @@ if selected_id and selected_details:
                 # --- Filters (Nationality + Value + Position + Preferred Foot) ---
                 # Prepare options for nationality, position, and preferred foot
                 nat_options = sorted(df['nationality_name'].dropna().unique().tolist())
+                league_options = sorted(df['league_name'].dropna().unique().tolist())
                 pos_options = sorted(df['primary_position'].dropna().unique().tolist())
                 foot_options = sorted(df['preferred_foot'].dropna().unique().tolist())
 
@@ -444,14 +452,23 @@ if selected_id and selected_details:
                 except Exception:
                     min_val, max_val = 0, 0
 
+                # Compute age bounds - min_val set to 0 forcibly
+                try:
+                    min_age = int(df['age'].min()) if pd.notnull(df['age'].min()) else 0
+                    max_age = int(df['age'].max()) if pd.notnull(df['age'].max()) else 0
+                except Exception:
+                    min_age, max_age = 0, 0
+
                 # Show filters inside an expander with enhanced heading styling
                 with st.expander("⚽ Player Filters 🎯", expanded=True):
-                    cols_f = st.columns([2, 1, 1])
+                    cols_f = st.columns([2, 1, 1, 1])
                     with cols_f[0]:
-                        selected_nationalities = st.multiselect("🌍 Nationality", options=nat_options, default=[])
+                        selected_leagues = st.multiselect("🏆 League", options=league_options, default=[])
                     with cols_f[1]:
-                        selected_positions = st.multiselect("📌 Primary Position", options=pos_options, default=[])
+                        selected_nationalities = st.multiselect("🌍 Nationality", options=nat_options, default=[])
                     with cols_f[2]:
+                        selected_positions = st.multiselect("📌 Primary Position", options=pos_options, default=[])
+                    with cols_f[3]:
                         selected_feet = st.multiselect("🦶 Preferred Foot", options=foot_options, default=[])
                     with cols_f[0]:
                         # value slider; step is coarse so we use an approximate step
@@ -461,12 +478,17 @@ if selected_id and selected_details:
                         # show the readable min/max next to the slider
                         st.markdown(f"**Min:** {eur(value_range[0]) if 'eur' in globals() else f'€{value_range[0]:,}'}  ")
                         st.markdown(f"**Max:** {eur(value_range[1]) if 'eur' in globals() else f'€{value_range[1]:,}'}  ")
+                    with cols_f[3]:
+                        # value slider; step is coarse so we use an approximate step
+                        age_range = st.slider("📅 Player age", min_age, max_age, (min_age, max_age), step=1)
 
 
                 # Apply filters to the dataframe
                 filtered_df = df.copy()
                 if selected_nationalities:
                     filtered_df = filtered_df[filtered_df['nationality_name'].isin(selected_nationalities)]
+                if selected_leagues:
+                    filtered_df = filtered_df[filtered_df['league_name'].isin(selected_leagues)]
                 if selected_positions:
                     filtered_df = filtered_df[filtered_df['primary_position'].isin(selected_positions)]
                 if selected_feet:
@@ -475,6 +497,12 @@ if selected_id and selected_details:
                 filtered_df['value_eur'] = filtered_df['value_eur'].fillna(0)
                 filtered_df = filtered_df[
                     (filtered_df['value_eur'] >= value_range[0]) & (filtered_df['value_eur'] <= value_range[1])
+                ]
+
+                # ensure numeric comparison
+                filtered_df['age'] = filtered_df['age'].fillna(0)
+                filtered_df = filtered_df[
+                    (filtered_df['age'] >= age_range[0]) & (filtered_df['age'] <= age_range[1])
                 ]
 
 
@@ -491,7 +519,7 @@ if selected_id and selected_details:
                     for i, row in filtered_df.iterrows():
                         with alt_cols[i % 5]:
                             # Dynamically change card color based on similarity score
-                            sim_color = '#00E676' if row['similarity'] >= 0.9 else ('#FFC107' if row['similarity'] >= 0.8 else '#FF5252')
+                            sim_color = '#00E676' if row['similarity'] >= 0.95 else ('#FFC107' if row['similarity'] >= 0.9 else '#FF5252')
 
 
                             img_src = get_image_base64(row.get('player_face_url') or '')
@@ -499,23 +527,37 @@ if selected_id and selected_details:
 
                             # Card structure for similar players
                             st.markdown(f"""
-                            <div class="player-card large" style="border-left: 5px solid {sim_color}; min-height: 250px;">
+                            <div class="player-card large" style="border-left: 5px solid {sim_color}; min-height: 400px;">
                                 <div class="player-header">{row['short_name']}</div>
                                 <img src="{img_src}" alt="player" />
                                 <div class="info-text" style="margin-top: 0.5rem;"></
                                 <div class="info-text">🎯 <b>Similarity:</b> {row['similarity_pct']}</div>
+                                <div class="info-text" style="margin-top: 0.5rem;"></
                                 <div class="info-text">📊 <b>OVR:</b> {row['overall']} | <b>POS:</b> {row['player_positions']}</div>
+                                <div class="info-text">💶 <b>Value:</b> {row['value_display']} | <b>Age:</b> {row['age']}</div>
+                                <div class="info-text" style="margin-top: 0.5rem;"></
                                 <div class="info-text">🌍 <b>Nationality:</b> {row['nationality_name']}</div>
+                                <div class="info-text">🏆 <b>League:</b> {row['league_name']}</div>
+                                <div class="info-text">🏟️ <b>Club:</b> {row['club_name']}</div>
                                 <div class="info-text">🦶 <b>Preferred Foot:</b> {row['preferred_foot']}</div>
-                                <div class="info-text">💶 <b>Value:</b> {row['value_display']}</div>
-                                <div style="margin-top: 0.75rem;">
-                                    <div class="info-text">⚡ Diving: {row['goalkeeping_diving']} | 🎯 Handling: {row['goalkeeping_handling']}</div>
-                                    <div class="info-text">👟 Kicking: {row['goalkeeping_kicking']} | 🛡️ Positioning: {row['goalkeeping_positioning']}</div>
-                                    <div class="info-text">💪 Reflexes: {row['goalkeeping_reflexes']} | 🏃 Speed: {row['goalkeeping_speed']}</div>
+                                <div style="margin-top: 0.5rem;">
+                                    <div class="info-text">🤾 Diving: {int(row['goalkeeping_diving'])} | 🤲 Handling: {int(row['goalkeeping_handling'])}</div>
+                                    <div class="info-text">👟 Kicking: {int(row['goalkeeping_kicking'])} | 📍 Positioning: {int(row['goalkeeping_positioning'])}</div>
+                                    <div class="info-text">⚡ Reflexes: {int(row['goalkeeping_reflexes'])} | 🏃‍♂️ Speed: {int(row['goalkeeping_speed'])}</div>
                                 </div>
                             </div>
                             """, unsafe_allow_html=True)
 
+                            # Allow selecting this similar player as the chosen alternative for comparison
+                            try:
+                                if st.button("Select Alternative", key=f"select_alt_{int(row['player_id'])}"):
+                                    st.session_state['selected_alternative_id'] = int(row['player_id'])
+                                    st.session_state['selected_alternative_details'] = row.to_dict()
+                                    st.toast(f"✅ Selected alternative {row.get('short_name')}!", icon="🧾")
+                                    st.rerun()
+                            except Exception:
+                                # defensive: ignore selection if player_id can't be parsed
+                                pass
 
                 else:
 
@@ -525,7 +567,7 @@ if selected_id and selected_details:
                     for i, row in filtered_df.iterrows():
                         with alt_cols[i % 5]:
                             # Dynamically change card color based on similarity score
-                            sim_color = '#00E676' if row['similarity'] >= 0.9 else ('#FFC107' if row['similarity'] >= 0.8 else '#FF5252')
+                            sim_color = '#00E676' if row['similarity'] >= 0.95 else ('#FFC107' if row['similarity'] >= 0.9 else '#FF5252')
 
 
                             img_src = get_image_base64(row.get('player_face_url') or '')
@@ -533,22 +575,37 @@ if selected_id and selected_details:
 
                             # Card structure for similar players
                             st.markdown(f"""
-                            <div class="player-card large" style="border-left: 5px solid {sim_color}; min-height: 250px;">
+                            <div class="player-card large" style="border-left: 5px solid {sim_color}; min-height: 400px;">
                                 <div class="player-header">{row['short_name']}</div>
                                 <img src="{img_src}" alt="player" />
                                 <div class="info-text" style="margin-top: 0.5rem;"></
                                 <div class="info-text">🎯 <b>Similarity:</b> {row['similarity_pct']}</div>
+                                <div class="info-text" style="margin-top: 0.5rem;"></
                                 <div class="info-text">📊 <b>OVR:</b> {row['overall']} | <b>POS:</b> {row['player_positions']}</div>
+                                <div class="info-text">💶 <b>Value:</b> {row['value_display']} | <b>Age:</b> {row['age']}</div>
+                                <div class="info-text" style="margin-top: 0.5rem;"></
                                 <div class="info-text">🌍 <b>Nationality:</b> {row['nationality_name']}</div>
+                                <div class="info-text">🏆 <b>League:</b> {row['league_name']}</div>
+                                <div class="info-text">🏟️ <b>Club:</b> {row['club_name']}</div>
                                 <div class="info-text">🦶 <b>Preferred Foot:</b> {row['preferred_foot']}</div>
-                                <div class="info-text">💶 <b>Value:</b> {row['value_display']}</div>
-                                <div style="margin-top: 0.75rem;">
-                                    <div class="info-text">⚡ Pace: {row['pace']} | 👟 Shooting: {row['shooting']}</div>
-                                    <div class="info-text">🎯 Passing: {row['passing']} | 🏃 Dribbling: {row['dribbling']}</div>
-                                    <div class="info-text">🛡️ Defending: {row['defending']} | 💪 Physic: {row['physic']}</div>
+                                <div style="margin-top: 0.5rem;">
+                                    <div class="info-text">⚡ Pace: {int(row['pace'])} | 👟 Shooting: {int(row['shooting'])}</div>
+                                    <div class="info-text">🎯 Passing: {int(row['passing'])} | 🏃 Dribbling: {int(row['dribbling'])}</div>
+                                    <div class="info-text">🛡️ Defending: {int(row['defending'])} | 💪 Physic: {int(row['physic'])}</div>
                                 </div>
                             </div>
                             """, unsafe_allow_html=True)
+
+                            # Allow selecting this similar player as the chosen alternative for comparison
+                            try:
+                                if st.button("Select Alternative", key=f"select_alt_{int(row['player_id'])}"):
+                                    st.session_state['selected_alternative_id'] = int(row['player_id'])
+                                    st.session_state['selected_alternative_details'] = row.to_dict()
+                                    st.toast(f"✅ Selected alternative {row.get('short_name')}!", icon="🧾")
+                                    st.rerun()
+                            except Exception:
+                                pass
+
             else:
                 st.warning("No similar alternatives found for this player.")
         else:
@@ -556,6 +613,143 @@ if selected_id and selected_details:
     except Exception as e:
         st.error(f"Error connecting to the similarity API: {e}")
 
+
+
+
+# ----- Selected alternative comparison (spider/radar) -----
+selected_alt = st.session_state.get('selected_alternative_details')
+if selected_alt and selected_details:
+    # only meaningful for outfield players (radar compares outfield stats)
+    sel_pos = str(selected_details.get('player_positions',''))
+    alt_pos = str(selected_alt.get('player_positions',''))
+    sel_is_gk = sel_pos.split(',')[0].strip().upper() == 'GK'
+    alt_is_gk = alt_pos.split(',')[0].strip().upper() == 'GK'
+
+    st.markdown('---')
+    st.markdown('## 🔎 Player Comparison')
+
+    # Define helper function for stats
+    def safe_stat(d, key):
+        try:
+            v = float(d.get(key, 0) or 0)
+        except Exception:
+            v = 0.0
+        v = max(0.0, min(100.0, v))
+        return v
+
+    # Helper function for radar plot
+    def plot_spider(labels, vals1, vals2, name1, name2):
+        import math
+        vals1 = [float(v) for v in vals1]
+        vals2 = [float(v) for v in vals2]
+        N = len(labels)
+        angles = [n / float(N) * 2 * math.pi for n in range(N)]
+        angles += angles[:1]
+        vals1 += vals1[:1]
+        vals2 += vals2[:1]
+
+        fig = plt.figure(figsize=(4,4))
+        ax = plt.subplot(111, polar=True)
+        ax.set_theta_offset(math.pi / 2)
+        ax.set_theta_direction(-1)
+        plt.xticks(angles[:-1], labels)
+        ax.set_rlabel_position(0)
+        max_val = 100
+        ax.set_ylim(0, max_val)
+
+        ax.plot(angles, vals1, linewidth=2, linestyle='solid', label=name1, color='#FF5252')
+        ax.fill(angles, vals1, alpha=0.25, color='#FF5252')
+        ax.plot(angles, vals2, linewidth=2, linestyle='solid', label=name2, color='#00E676')
+        ax.fill(angles, vals2, alpha=0.25, color='#00E676')
+        plt.legend(loc='upper right', bbox_to_anchor=(1.3, 1.1))
+        return fig
+
+    # small format helpers for display values used below
+    def fmt_similarity(d):
+        try:
+            v = d.get('similarity')
+            if isinstance(v, (float, int)):
+                return f"{v:.2%}"
+        except Exception:
+            pass
+        return "—"
+
+    def fmt_value(d):
+        try:
+            v = d.get('value_eur')
+            if v is None:
+                return "—"
+            return f"€{int(v):,}"
+        except Exception:
+            return "—"
+
+    # Set up the three-column layout for all cases
+    left, middle, right = st.columns([1, 1, 1])
+
+    # Left column: original player (left-aligned)
+    with left:
+        img_src = get_image_base64(selected_details.get('player_face_url') or '')
+        st.markdown(f"<div style='text-align:left;'>"
+                    f"<img src=\"{img_src}\" style=\"width:140px; display:block; margin:0 0 8px 0; border-radius:8px;\"/>"
+                    f"</div>", unsafe_allow_html=True)
+        st.markdown(
+            f"<div style='text-align:left; color:#ffffff; padding-right:6px;'>"
+            f"<div style='font-weight:700; font-size:1.02rem;'>{selected_details.get('long_name','—')}</div>"
+            f"<div>📊 OVR: {selected_details.get('overall','—')} | POS: {selected_details.get('player_positions','—')}</div>"
+            f"<div>💶 Value: {fmt_value(selected_details)} | Age: {selected_details.get('age','—')}</div>"
+            f"<div>🌍 Nationality: {selected_details.get('nationality_name','—')}</div>"
+            f"<div>🏆 League: {selected_details.get('league_name','—')}</div>"
+            f"<div>🏟️ Club: {selected_details.get('club_name','—')}</div>"
+            f"<div>🦶 Preferred Foot: {selected_details.get('preferred_foot','—')}</div>"
+            f"</div>",
+            unsafe_allow_html=True
+        )
+
+    # Handle radar chart based on player types
+    if sel_is_gk and alt_is_gk:
+        # Goalkeeper stats radar
+        keys = ['goalkeeping_diving', 'goalkeeping_handling', 'goalkeeping_kicking',
+                'goalkeeping_positioning', 'goalkeeping_reflexes', 'goalkeeping_speed']
+        labels = ['Diving', 'Handling', 'Kicking', 'Positioning', 'Reflexes', 'Speed']
+        orig_vals = [safe_stat(selected_details, k) for k in keys]
+        alt_vals = [safe_stat(selected_alt, k) for k in keys]
+        fig = plot_spider(labels, orig_vals, alt_vals,
+                         selected_details.get('short_name','Original'),
+                         selected_alt.get('short_name','Alternative'))
+        with middle:
+            st.pyplot(fig)
+
+    elif not sel_is_gk and not alt_is_gk:
+        # Outfield stats radar
+        labels = ["Pace", "Shooting", "Passing", "Dribbling", "Defending", "Physic"]
+        keys = ['pace','shooting','passing','dribbling','defending','physic']
+        orig_vals = [safe_stat(selected_details, k) for k in keys]
+        alt_vals = [safe_stat(selected_alt, k) for k in keys]
+        fig = plot_spider(labels, orig_vals, alt_vals,
+                         selected_details.get('short_name','Original'),
+                         selected_alt.get('short_name','Alternative'))
+        with middle:
+            st.pyplot(fig)
+
+    # Right column (alternative player) - align image to right and show name/stats in white on separate lines
+    with right:
+        img_src = get_image_base64(selected_alt.get('player_face_url') or '')
+        # Use HTML to control right alignment for the image and ensure consistent styling
+        st.markdown(
+            f"<div style=\"text-align:right;\">"
+            f"<img src=\"{img_src}\" width=\"140\" style=\"display:block; margin:0 0 8px auto; border-radius:8px;\">"
+            f"</div>"
+            f"<div style=\"text-align:right; color:#ffffff; padding-left:6px;\">"
+            f"<div style='font-weight:700; font-size:1.02rem;'>{selected_alt.get('long_name','—')}</div>"
+            f"<div>📊 OVR: {selected_alt.get('overall','—')} | POS: {selected_alt.get('player_positions','—')}</div>"
+            f"<div>💶 Value: {fmt_value(selected_alt)} | Age: {selected_alt.get('age','—')}</div>"
+            f"<div>🌍 Nationality: {selected_alt.get('nationality_name','—')}</div>"
+            f"<div>🏆 League: {selected_alt.get('league_name','—')}</div>"
+            f"<div>🏟️ Club: {selected_alt.get('club_name','—')}</div>"
+            f"<div>🦶 Preferred Foot: {selected_alt.get('preferred_foot','—')}</div>"
+            f"</div>",
+            unsafe_allow_html=True,
+        )
 
 
 
@@ -589,18 +783,19 @@ if ptype == "Outfield":
     st.subheader("Outfield features")
     c1, c2, c3 = st.columns(3)
     with c1:
-        age       = st.slider("age 🎂", 15, 45, 23)
-        pace      = st.slider("pace ⚡",      1, 99, 80)
-        dribbling = st.slider("dribbling 🎯", 1, 99, 80)
+        pace      = st.slider("Pace ⚡",      1, 99, 80)
+        shooting  = st.slider("Shooting 🎯",  1, 99, 78)
+        passing   = st.slider("Passing 🔄", 1, 99, 81)
+
     with c2:
-        passing   = st.slider("passing 🔄", 1, 99, 81)
-        shooting  = st.slider("shooting 🎯",  1, 99, 78)
-        defending = st.slider("defending 🛡️", 1, 99, 70)
+        dribbling = st.slider("Dribbling 🎯", 1, 99, 80)
+        defending = st.slider("Defending 🛡️", 1, 99, 70)
+        physic      = st.slider("Physic 💪",  1, 99, 79)
+
     with c3:
         skill_moves = st.slider("Skill Moves ⭐", 1, 5, 3)
-        weak_foot   = st.slider("Weak Foot 🤕", 1, 5, 3)
-        physic      = st.slider("physic 💪",  1, 99, 79)
-
+        weak_foot   = st.slider("Weak Foot 🦶", 1, 5, 3)
+        age       = st.slider("Age 🎂", 15, 45, 23)
 
     params   = dict(
         skill_moves=skill_moves, weak_foot=weak_foot, age=age, pace=pace,
@@ -649,17 +844,17 @@ else:
     st.subheader("Goalkeeper features")
     c1, c2, c3 = st.columns(3)
     with c1:
-        gk_div   = st.slider("diving", 1, 99, 82)
-        gk_kick  = st.slider("kicking", 1, 99, 78)
-        gk_ref   = st.slider("reflexes", 1, 99, 85)
+        gk_div   = st.slider("Diving 🤾", 1, 99, 82)
+        gk_kick  = st.slider("Kicking 👟", 1, 99, 78)
+        gk_ref   = st.slider("Reflexes ⚡", 1, 99, 85)
     with c2:
-        gk_hand  = st.slider("handling", 1, 99, 81)
-        gk_pos   = st.slider("positioning", 1, 99, 83)
-        gk_speed = st.slider("speed", 1, 99, 63)
+        gk_hand  = st.slider("Handling 🤲", 1, 99, 81)
+        gk_pos   = st.slider("Positioning 📍", 1, 99, 83)
+        gk_speed = st.slider("Speed 🏃‍♂️", 1, 99, 63)
     with c3:
-        pen      = st.slider("mentality on penalties", 1, 99, 60)
-        comp     = st.slider("mentality on composure", 1, 99, 70)
-        age      = st.slider("age", 15, 45, 24)
+        pen      = st.slider("Penalties 🧠", 1, 99, 60)
+        comp     = st.slider("Composure 🧊", 1, 99, 70)
+        age      = st.slider("Age 🎂", 15, 45, 24)
 
 
     params = dict(
