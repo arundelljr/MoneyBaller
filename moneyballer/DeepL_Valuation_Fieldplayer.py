@@ -60,6 +60,7 @@ mlp = MLPRegressor(
     activation='relu',
     solver='adam',
     max_iter=500,
+    alpha=0.0001,
     random_state=42,
     early_stopping=True,
     validation_fraction=0.10,
