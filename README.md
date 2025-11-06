@@ -1,10 +1,16 @@
 Hi there 👋 we are the Team from MoneyBaller
-With passion and Data Science 📊 we tackle all issue ! 
-In this repository and project we have created an app :[https://moneyballer.streamlit.app ](url)
-We used several models such as KNN, Classifier and Deeplearning model in order to predict the value of similar players. We are a strong advocate of clubs looking for undervalued talents.
+With passion and Data Science 📊 we tackle all issues ! 
+Do you like football ? Do you wonder if the value for player is correct ? You think it is too much, or unfair ? Player's value is a major issue for football clubs 
+
+In this repository we attacked this problem and we have created an app :[https://moneyballer.streamlit.app ](url)
+
+HOW DID WE DO 
+We used several models such as KNN, PCA, Classifier and Deeplearning model in order to predict the value of similar players. 
+We are a strong advocate of right value at the right price. A clubs are often looking for undervalued talents.
+
 Thanks to our ☁️ Cloud computing models we created model and proposed 🆕 Innovation and Automation 🤖
 
-⚡ Fun fact: Can you have the same characteristics, be a similar player in term of results and then be undervalued ?
-💡 Could you use models to define a new position for your player. What does the model predict ?
-💬 Can I change all my players caracteristic to define what kind of skills I am looking for my talents ? 
+⚡ Fun fact: Let's put a name to find similar players to your favorite one ? Same caracteristic, however what about the value ? Is it the same ?
+💡 Clic on the green button and reveal the right value we found.
+💬 You greedy ! You want to know more ? Define yourself new skills to find more options
 
